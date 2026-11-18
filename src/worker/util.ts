@@ -14,7 +14,7 @@ import {
 } from '../prompts/types/ApiToolChain.ts';
 import { StandardStreams } from '../prompts/types/ShellExecutor.ts';
 import { redisGet } from '../state/state.ts';
-import { PromptChain, RelatedTransactionsChain, _Status, TaskType, Transaction } from '../state/types.ts';
+import { PromptChain, RelatedTransactionsChain, _Status, TaskType, Transaction, Status } from '../state/types.ts';
 import {
 	getExec,
 	getJob,
@@ -83,14 +83,14 @@ export const updateRelated = async ({
 		let currEntry: Transaction | undefined;
 
 		switch (type) {
-			case 'EXECUTION':
+			case TaskType.EXECUTION:
 				currEntry = await getExec(_id);
 				break;
-			case 'JOB':
+			case TaskType.JOB:
 				currEntry = await getJob(_id);
 				break;
-			case 'TASK_DIRECT':
-			case 'TASK':
+			case TaskType.TASK_DIRECT:
+			case TaskType.TASK:
 				currEntry = await getTask(_id);
 				break;
 		}
@@ -117,14 +117,14 @@ export const updateRelated = async ({
 					currEntry.related?.exec?.push(newTask[i]);
 
 		switch (type) {
-			case 'EXECUTION':
+			case TaskType.EXECUTION:
 				success = await setExec(currEntry);
 				break;
-			case 'JOB':
+			case TaskType.JOB:
 				success = await setJob(currEntry);
 				break;
-			case 'TASK_DIRECT':
-			case 'TASK':
+			case TaskType.TASK_DIRECT:
+			case TaskType.TASK:
 				success = await setTask(currEntry);
 				break;
 		}
@@ -152,14 +152,14 @@ export const appendToTransactionLog = async ({
 		let currTx: Transaction | undefined;
 
 		switch (type) {
-			case 'TASK':
-			case 'TASK_DIRECT':
+			case TaskType.TASK_DIRECT:
+			case TaskType.TASK:
 				currTx = await getTask(_id);
 				break;
-			case 'EXECUTION':
+			case TaskType.EXECUTION:
 				currTx = await getExec(_id);
 				break;
-			case 'JOB':
+			case TaskType.JOB:
 				currTx = await getJob(_id);
 				break;
 		}
@@ -180,7 +180,7 @@ export const appendToTransactionLog = async ({
 		};
 
 		switch (type) {
-			case 'JOB':
+			case TaskType.JOB:
 				success = await setJob({
 					id: _id,
 					status: currTx?.status,
@@ -188,9 +188,10 @@ export const appendToTransactionLog = async ({
 					type: currTx?.type,
 				});
 				break;
-			case 'TASK':
-			case 'TASK_DIRECT':
-			case 'SHELL_JOB': // for now..?
+			
+			case TaskType.TASK_DIRECT:
+			case TaskType.TASK:
+			case TaskType.SHELL_JOB: // for now..?
 				success = await setTask({
 					id: _id,
 					status: currTx?.status,
@@ -198,7 +199,7 @@ export const appendToTransactionLog = async ({
 					type: currTx?.type,
 				});
 				break;
-			case 'EXECUTION':
+			case TaskType.EXECUTION:
 				success = await setExec({
 					id: _id,
 					status: currTx?.status,
@@ -234,6 +235,13 @@ export const execWrapper = async (func: _func, args: string[]) => {
 
 	return result;
 };
+/**
+ * 
+ * @param key : job id
+ * @param tool : tool entry object
+ * @param Params : tool params
+ * @returns 
+ */
 
 const SafeExecute = async (
 	key: string,
@@ -377,13 +385,12 @@ const AddJob = async (id: string, job_id: string) => {
 };
 
 /**
- *
  * @param exec_id transaction id
  * @param {ToolCallPayload} toolPayload llm generated tool payload in json form
  * @returns
  */
 
-const ExecProcessJob = async (
+const ExecToolCall = async (
 	exec_id: string,
 	toolPayload: ToolCallPayload,
 ) => {
@@ -512,9 +519,7 @@ const ExecProcessJob = async (
  */
 
 export const ToolExec = async (
-	toolExecId: string,
-	task: string,
-	toolExecPayload: string,
+	{toolExecId, task, toolExecPayload} : {toolExecId: string, task: string, toolExecPayload: string,}
 ) => {
 	logger.debug(`ToolExec`);
 
@@ -524,7 +529,7 @@ export const ToolExec = async (
 			status: Status.RUNNING,
 			message: 'Tool Exec',
 		},
-		type: 'EXECUTION',
+		type: TaskType.EXECUTION,
 	});
 
 	await appendToTransactionLog({
@@ -534,7 +539,7 @@ export const ToolExec = async (
 		newLLMResponse: toolExecPayload,
 	});
 
-	let result: string = 'FAILED';
+	let result: string = 'FAILED'; 
 
 	try {
 		const narrowed = await call_llm_data_narrower(
@@ -558,7 +563,7 @@ export const ToolExec = async (
 			throw new Error(`no steps found: ${steps}`);
 
 		// exec
-		result = await ExecProcessJob(toolExecId, json_response);
+		result = await ExecToolCall(toolExecId, json_response);
 
 		await setExec({
 			id: toolExecId,

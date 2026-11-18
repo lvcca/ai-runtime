@@ -1,10 +1,10 @@
 import { call_llm_chat, call_llm_toolcall, PROMPTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { RelatedTransactionsChain, _Status, TaskType } from '../state/types.ts';
+import { RelatedTransactionsChain, _Status, TaskType, Status } from '../state/types.ts';
 import { getExec, setExec } from '../state/util.ts';
 import { registry } from '../tools/ToolBootstrap.ts';
 import { ToolExec, appendToTransactionLog } from './util.ts';
-import crypto from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 
 const logger = getLogger('ExecutionWorker');
 
@@ -42,6 +42,7 @@ export const RunExec = async (
 	exec_id: string,
 	task: string,
 ) => {
+	logger.debug(`RunExec, id: ${exec_id}, task: ${task}`)
 	// set status
 	await setExec({
 		id: exec_id,
@@ -49,16 +50,13 @@ export const RunExec = async (
 	});
 
 	let related: RelatedTransactionsChain | undefined;
-	// get current
 	const currObj = await getExec(exec_id);
-
 	related = currObj?.related;
-
 	let finalOutput: string = 'FAILED';
 
 	try {
 
-		let ToolExecPayload = await GetToolExecPayload(task, related);
+		let toolExecPayload = await GetToolExecPayload(task, related);
 
 		await appendToTransactionLog({
 			_id: exec_id,
@@ -67,8 +65,8 @@ export const RunExec = async (
 		});
 
 		// task execution env
-		const toolExecId = crypto.randomUUID();
-		const toolOutput = await ToolExec(toolExecId, task, ToolExecPayload);
+		const toolExecId = randomUUID();
+		const toolOutput = await ToolExec({toolExecId, task, toolExecPayload});
 
 		// execution result
 		if (typeof toolOutput === 'string') {
@@ -91,6 +89,7 @@ export const RunExec = async (
 			throw new Error(
 				`toolOutput did not match expected string output type: ${typeof toolOutput}, ${JSON.stringify(toolOutput)}`,
 			);
+
 	} catch (e) {
 		logger.error(`something went wrong in RunExec: ${e}`);
 

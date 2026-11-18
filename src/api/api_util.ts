@@ -5,6 +5,7 @@ import {
 	RelatedTransactionsChain,
 	_Status,
 	TaskType,
+	Status,
 } from '../state/types.ts';
 import { getLogger } from '../logger/logger.ts';
 import { redisEntryExists, redisGet, redisSet } from '../state/state.ts';
@@ -16,7 +17,7 @@ import {
 	setJob,
 	setTask,
 } from '../state/util.ts';
-import crypto, { randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { call_llm_task_validator } from '../llm.ts';
 import {
 	extractResponseBlock,
@@ -73,7 +74,7 @@ export const GeneralInsert = async ({
 	if (req && type) {
 		logger.debug(`originated from: http call`);
 		//
-		id = getHeader(req, 'id') ?? crypto.randomUUID();
+		id = getHeader(req, 'id') ?? randomUUID();
 		task = getHeader(req, 'task');
 	}
 
@@ -90,7 +91,7 @@ export const GeneralInsert = async ({
 
 	// if exists create new task with link to existing task
 	if (exists) {
-		const newId = crypto.randomUUID();
+		const newId = randomUUID();
 
 		const prompt: PromptChain = currEntry?.prompt ?? {};
 
@@ -107,20 +108,20 @@ export const GeneralInsert = async ({
 		let related: RelatedTransactionsChain = structuredClone(currEntry?.related);
 
 		switch (currEntry?.type) {
-			case 'EXECUTION':
+			case TaskType.EXECUTION:
 				if (related && !related?.exec) related.exec = [];
 
 				related?.exec?.push(id);
 				break;
 
-			case 'JOB':
+			case TaskType.JOB:
 				if (related && !related.job) related.job = [];
 
 				related?.job?.push(id);
 				break;
 
-			case 'TASK':
-			case 'TASK_DIRECT':
+			case TaskType.TASK_DIRECT:
+			case TaskType.TASK:
 				if (related && !related.task) related.task = [];
 
 				related?.task?.push(id);
@@ -295,13 +296,15 @@ export const run = async (id: string, type: TaskType) => {
 	if (!user_req || user_req.length < 1)
 		throw new Error(`no user req string found for task ${id}`);
 
+	const latestRequest = user_req[0];
+
 	switch (type) {
 		case TaskType.TASK_DIRECT:
 		case TaskType.TASK:
-			result = await RunTask(id, user_req[0], taskDirect);
+			result = await RunTask(id, latestRequest, taskDirect);
 			break;
 		case TaskType.EXECUTION:
-			result = await RunExec(id, user_req[0]);
+			result = await RunExec(id, latestRequest);
 			break;
 		default:
 			logger.warn(`no case for ${type}`);

@@ -1,6 +1,6 @@
 import { call_llm_chat, call_llm_tasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { _Status, TaskType } from '../state/types.ts';
+import { _Status, Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
 import { GetPlan, PlannerWorkerResultType, RevisePlan } from './Planner.ts';
 import { appendToTransactionLog } from './util.ts';
@@ -41,7 +41,7 @@ export const RunTask = async (
 			revised_plan = RevisePlanResult.steps.join();
 			
 			final_output = await call_llm_tasks(`
-	You are an execution agent.
+	You are a task execution agent.
 	
 	Your job is to complete the requested task using the provided plan.
 	
@@ -57,7 +57,6 @@ export const RunTask = async (
 	- Do not explain your reasoning unless necessary
 	- Return only the completed result
 	
-	EXECUTION:
 	`);
 		}
 
