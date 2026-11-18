@@ -1,14 +1,9 @@
 services:
-  # -----------------------------
-  # LLM SERVER (Ollama)
-  # -----------------------------
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     ports:
       - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
     restart: unless-stopped
     gpus: all
     entrypoint: >
@@ -21,9 +16,6 @@ services:
       wait
       "
 
-  # -----------------------------
-  # ORCHESTRATOR (AI BRAIN)
-  # -----------------------------
   ai-orchestrator:
     build: ../ai-orchestrator
     container_name: ai-orchestrator
@@ -39,19 +31,13 @@ services:
       - ../ai-orchestrator:/app
     working_dir: /app
     restart: unless-stopped
-    gpus: all
 
-
-  # -----------------------------
-  # REDIS (STATE / MEMORY)
-  # -----------------------------
   redis:
     image: redis:7-alpine
-    container_name: ai-redis
+    container_name: redis
     ports:
       - "6379:6379"
     restart: unless-stopped
-    gpus: all
 
 
 volumes:

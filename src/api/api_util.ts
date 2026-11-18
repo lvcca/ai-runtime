@@ -1,13 +1,13 @@
 import type { Request, Response } from 'express';
 import {
 	type Transaction,
-	Prompt,
-	Related,
-	Status,
+	PromptChain,
+	RelatedTransactionsChain,
+	_Status,
 	TaskType,
 } from '../state/types.ts';
 import { getLogger } from '../logger/logger.ts';
-import { redisExists, redisGet, redisSet } from '../state/state.ts';
+import { redisEntryExists, redisGet, redisSet } from '../state/state.ts';
 import {
 	getExec,
 	getJob,
@@ -54,7 +54,7 @@ export const GeneralInsert = async ({
 	_id?: string;
 	_task?: string;
 }) => {
-	logger.info(`in task insert`);
+	logger.debug(`in task insert`);
 
 	let successful: boolean = false;
 
@@ -63,7 +63,7 @@ export const GeneralInsert = async ({
 
 	// local caller
 	if (_id && _task) {
-		logger.info(`originated from: local internal call`);
+		logger.debug(`originated from: local internal call`);
 		//
 		id = _id;
 		task = _task;
@@ -71,15 +71,15 @@ export const GeneralInsert = async ({
 
 	// remote caller
 	if (req && type) {
-		logger.info(`originated from: http call`);
+		logger.debug(`originated from: http call`);
 		//
 		id = getHeader(req, 'id') ?? crypto.randomUUID();
 		task = getHeader(req, 'task');
 	}
 
-	const exists = await redisExists(id);
+	const exists = await redisEntryExists(id);
 
-	logger.info(`exists: ${exists}`);
+	logger.debug(`exists: ${exists}`);
 
 	// if exists get entry
 	let currEntry: Transaction | undefined;
@@ -92,19 +92,19 @@ export const GeneralInsert = async ({
 	if (exists) {
 		const newId = crypto.randomUUID();
 
-		const prompt: Prompt = currEntry?.prompt ?? {};
+		const prompt: PromptChain = currEntry?.prompt ?? {};
 
-		const llmResponse = prompt.llmResponse ?? [];
-		const userRequest = prompt.userRequest ?? [];
+		const llmResponse = prompt.llmResponseChain ?? [];
+		const userRequest = prompt.userRequestChain ?? [];
 
 		llmResponse?.push(task);
 
-		const newPrompt: Prompt = {
-			userRequest,
-			llmResponse,
+		const newPrompt: PromptChain = {
+			userRequestChain: userRequest,
+			llmResponseChain: llmResponse,
 		};
 
-		let related: Related = structuredClone(currEntry?.related);
+		let related: RelatedTransactionsChain = structuredClone(currEntry?.related);
 
 		switch (currEntry?.type) {
 			case 'EXECUTION':
@@ -142,6 +142,7 @@ export const GeneralInsert = async ({
 
 		logger.info(`sanity check: ${id === newId}`);
 	} else {
+		// create new transaction
 		transaction = {
 			id,
 			status: {
@@ -149,8 +150,8 @@ export const GeneralInsert = async ({
 			},
 			type: type,
 			prompt: {
-				userRequest: [task],
-				llmResponse: [],
+				userRequestChain: [task],
+				llmResponseChain: [],
 			},
 		};
 	}
@@ -177,7 +178,7 @@ export const GeneralInsert = async ({
 	return id;
 };
 
-export const resolveRelated = async (related?: Related) => {
+export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 	let tasks: Transaction[] = [];
 	let execs: Transaction[] = [];
 	let jobs: Transaction[] = [];
@@ -224,7 +225,7 @@ export const validate = async (id?: string) => {
 
 	const { result, prompt, related } = entry;
 
-	const task = entry.prompt?.userRequest;
+	const task = entry.prompt?.userRequestChain;
 
 	let _result: string;
 
@@ -289,7 +290,7 @@ export const run = async (id: string, type: TaskType) => {
 	const currentTx = await redisGet(id);
 
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
-	const user_req = currentTx?.prompt?.userRequest;
+	const user_req = currentTx?.prompt?.userRequestChain;
 
 	if (!user_req || user_req.length < 1)
 		throw new Error(`no user req string found for task ${id}`);
@@ -300,7 +301,7 @@ export const run = async (id: string, type: TaskType) => {
 			result = await RunTask(id, user_req[0], taskDirect);
 			break;
 		case TaskType.EXECUTION:
-			result = await RunExec(id, user_req[0], taskDirect);
+			result = await RunExec(id, user_req[0]);
 			break;
 		default:
 			logger.warn(`no case for ${type}`);

@@ -7,7 +7,7 @@ const logger = getLogger('llm');
 
 const LLM_MODEL = {
 	LLAMA_3_1: 'llama3.1',
-	QWEN3_CODER: 'qwen3-coder:30b',
+	QWEN3_CODER: 'qwen3-coder:latest',
 	GRANITE_4: 'granite4.1:3b',
 };
 export type LLM_MODEL = (typeof LLM_MODEL)[keyof typeof LLM_MODEL];

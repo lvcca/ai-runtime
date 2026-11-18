@@ -183,17 +183,8 @@ export const search_files = async (
 	return results.join(',');
 };
 
-// -------------------
-// REGISTRATION ENTRYPOINT
-// -------------------
-
 export function RegisterTools(registry: ToolRegistry): void {
-	registry.register(
-		'current_working_directory',
-		currentWorkingDirectory,
-		'filesystem',
-	);
-
+	registry.register('current_working_directory', currentWorkingDirectory, 'filesystem',);
 	registry.register('list_directory', list_directory, 'filesystem');
 	registry.register('read_file', read_file, 'filesystem');
 	registry.register('write_file', write_file, 'filesystem');

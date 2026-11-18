@@ -34,7 +34,7 @@ export const ManageTransaction = async (id: string) => {
 
 	if (!entry) throw new Error(`no entry found with id ${id}`);
 
-	logger.info(`execution_id: ${id}`);
+	logger.debug(`execution_id: ${id}`);
 
 	const summary = await SummarizeTask(id);
 
@@ -82,7 +82,7 @@ ONLY ACCEPTABLE OUTPUT FORMAT:
 	final_results =
 		await parseJsonSafe<TransactionManagerResponse>(initialResponse);
 
-	logger.info(
+	logger.debug(
 		`ManageTransaction final_results: ${JSON.stringify(final_results)}`,
 	);
 

@@ -1,18 +1,17 @@
 import { call_llm_chat, call_llm_tasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { Status, TaskType } from '../state/types.ts';
+import { _Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
 import { GetPlan, PlannerWorkerResultType, RevisePlan } from './Planner.ts';
 import { appendToTransactionLog } from './util.ts';
 
 const logger = getLogger('ShellWorker');
 
-export const RunTask = async (
+export const RunShellTask = async (
 	task_id: string,
 	task: string,
-	LLM_DIRECT: boolean,
 ) => {
-	logger.debug(`runTask`);
+	logger.debug(`run shell task`);
 
 	await setTask({
 		id: task_id,
@@ -22,10 +21,9 @@ export const RunTask = async (
 	let final_output = '';
 	let plan = '';
 	let revised_plan = '';
-	let status: Status = Status.FAILED; // assume failed
+	let status: _Status = Status.FAILED; // assume failed
 
 	try {
-		if (LLM_DIRECT) final_output = await call_llm_chat(`${task}`);
 
 		plan = await GetPlan(task);
 
@@ -57,7 +55,7 @@ RULES:
 
 		await appendToTransactionLog({
 			_id: task_id,
-			type: LLM_DIRECT ? TaskType.TASK_DIRECT : TaskType.TASK,
+			type: TaskType.SHELL_JOB,
 			newUserRequest: task,
 			newLLMResponse: plan,
 		});
@@ -68,7 +66,7 @@ RULES:
 
 		await appendToTransactionLog({
 			_id: task_id,
-			type: LLM_DIRECT ? TaskType.TASK_DIRECT : TaskType.TASK,
+			type: TaskType.SHELL_JOB,
 			newUserRequest: task,
 			newLLMResponse: plan,
 		});
