@@ -58,11 +58,9 @@ const load_context = async (prompts_md_file: string) => {
 	logger.info(`prompts_md_file: ${prompts_md_file}`);
 
 	try {
-		// const currentDir = import.meta?.dirname ?? __dirname ?? "/app/dist/";
+		const appRootDir = '/app/dist/';
 
-		const currentDir = '/app/dist/';
-
-		const filePath = path.join(currentDir, prompts_md_file);
+		const filePath = path.join(appRootDir, prompts_md_file);
 
 		const file_string = await readFile(filePath, 'utf8');
 
