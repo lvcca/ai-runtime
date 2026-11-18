@@ -25,7 +25,7 @@ export const TaskType = {
 	TASK: 'TASK',
 	EXECUTION: 'EXECUTION',
 	JOB: 'JOB',
-	SHELL_JOB: 'SHELL_JOB'
+	SHELL_JOB: 'SHELL_JOB',
 } as const;
 
 export type TaskType = (typeof TaskType)[keyof typeof TaskType];

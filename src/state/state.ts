@@ -94,7 +94,8 @@ export const redisGet = async (id: string) => {
 		const _connection = await getConnection();
 		const entry = await _connection.get(id);
 
-		if (!entry || typeof entry !== 'string') throw new Error(`could not find entry with id: ${id}`);
+		if (!entry || typeof entry !== 'string')
+			throw new Error(`could not find entry with id: ${id}`);
 
 		const parsed: Transaction = JSON.parse(entry);
 		return structuredClone(parsed);

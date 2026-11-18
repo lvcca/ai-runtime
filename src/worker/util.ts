@@ -1,5 +1,4 @@
 import {
-	call_LLM,
 	call_llm_data_narrower,
 	call_llm_shell_branch_analyzer,
 	call_llm_shell_branch_simplifier,
@@ -14,7 +13,14 @@ import {
 } from '../prompts/types/ApiToolChain.ts';
 import { StandardStreams } from '../prompts/types/ShellExecutor.ts';
 import { redisGet } from '../state/state.ts';
-import { PromptChain, RelatedTransactionsChain, _Status, TaskType, Transaction, Status } from '../state/types.ts';
+import {
+	PromptChain,
+	RelatedTransactionsChain,
+	_Status,
+	TaskType,
+	Transaction,
+	Status,
+} from '../state/types.ts';
 import {
 	getExec,
 	getJob,
@@ -54,7 +60,7 @@ export const extractResponseBlock = async (text: string) => {
 			await parseJsonSafe(text);
 			validJson = true;
 		} catch (e) {
-			logger.error(`extracted text was not valid json`);
+			logger.error(`extracted text was not valid json, ${e}`);
 		}
 
 		if (validJson) {
@@ -188,7 +194,7 @@ export const appendToTransactionLog = async ({
 					type: currTx?.type,
 				});
 				break;
-			
+
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
 			case TaskType.SHELL_JOB: // for now..?
@@ -208,7 +214,7 @@ export const appendToTransactionLog = async ({
 				});
 				break;
 			default:
-				logger.warn(`no case for type: ${type}`)
+				logger.warn(`no case for type: ${type}`);
 				break;
 		}
 	} catch (e) {
@@ -236,11 +242,11 @@ export const execWrapper = async (func: _func, args: string[]) => {
 	return result;
 };
 /**
- * 
+ *
  * @param key : job id
  * @param tool : tool entry object
  * @param Params : tool params
- * @returns 
+ * @returns
  */
 
 const SafeExecute = async (
@@ -289,7 +295,9 @@ const SafeExecute = async (
 				logger.info('is a shell result type');
 
 				// get arrays
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const keys = Object.keys(result as any);
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const vals = Object.values(result as any);
 
 				// find keys
@@ -390,10 +398,7 @@ const AddJob = async (id: string, job_id: string) => {
  * @returns
  */
 
-const ExecToolCall = async (
-	exec_id: string,
-	toolPayload: ToolCallPayload,
-) => {
+const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 	let pivotRequired = false;
 	let final_results: string = 'FAILED';
 	let jobs = new Map<string, string | undefined>();
@@ -518,9 +523,15 @@ const ExecToolCall = async (
  * @returns {Promise<string>}
  */
 
-export const ToolExec = async (
-	{toolExecId, task, toolExecPayload} : {toolExecId: string, task: string, toolExecPayload: string,}
-) => {
+export const ToolExec = async ({
+	toolExecId,
+	task,
+	toolExecPayload,
+}: {
+	toolExecId: string;
+	task: string;
+	toolExecPayload: string;
+}) => {
 	logger.debug(`ToolExec`);
 
 	await setExec({
@@ -539,7 +550,7 @@ export const ToolExec = async (
 		newLLMResponse: toolExecPayload,
 	});
 
-	let result: string = 'FAILED'; 
+	let result: string = 'FAILED';
 
 	try {
 		const narrowed = await call_llm_data_narrower(
@@ -592,7 +603,7 @@ export const ToolExec = async (
 	return result;
 };
 
-const SimplifyOpinion = async (next_step: string) =>
+export const SimplifyOpinion = async (next_step: string) =>
 	await call_llm_shell_branch_simplifier(`
 You are a quality assurance expert. 
 
@@ -613,7 +624,7 @@ const FormatStringArray = (results: string[]) => {
 	return res;
 };
 
-const GetSecondOpinion = async (
+export const GetSecondOpinion = async (
 	analysis: string,
 	job_results: string[],
 	job_ids: string[],
@@ -664,7 +675,7 @@ Expected Output Format:
 </LLM_RESPONSE>
 `);
 
-const AnalyzeShellResults = async (
+export const AnalyzeShellResults = async (
 	job_results: string[],
 	job_ids: string[],
 	task_id: string,

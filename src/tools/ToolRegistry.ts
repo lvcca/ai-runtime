@@ -2,6 +2,7 @@ import { getLogger } from '../logger/logger.ts';
 
 const logger = getLogger('ToolRegistry');
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type _func = (...args: any[]) => Promise<string>;
 
 export type ToolEntry = {

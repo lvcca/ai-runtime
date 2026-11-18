@@ -14,4 +14,27 @@ export default defineConfig([
     basePath: "./src"
   },
   tseslint.configs.recommended,
+  {
+    rules: {
+      'prefer-const': 'off',
+      "@typescript-eslint/no-empty-object-type": [
+        "error",
+        {
+          allowObjectTypes: "always",
+        },
+      ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "args": "all",
+          "argsIgnorePattern": "^_",
+          "caughtErrors": "all",
+          "caughtErrorsIgnorePattern": "^_",
+          "destructuredArrayIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "ignoreRestSiblings": true
+        }
+      ]
+    }
+  }
 ]);

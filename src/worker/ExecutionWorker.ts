@@ -1,14 +1,22 @@
-import { call_llm_chat, call_llm_toolcall, PROMPTS } from '../llm.ts';
+import { call_llm_toolcall, PROMPTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { RelatedTransactionsChain, _Status, TaskType, Status } from '../state/types.ts';
+import {
+	RelatedTransactionsChain,
+	_Status,
+	TaskType,
+	Status,
+} from '../state/types.ts';
 import { getExec, setExec } from '../state/util.ts';
 import { registry } from '../tools/ToolBootstrap.ts';
 import { ToolExec, appendToTransactionLog } from './util.ts';
-import {randomUUID} from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 const logger = getLogger('ExecutionWorker');
 
-export const GetToolExecPayload = async (task: string, related: RelatedTransactionsChain) =>
+export const GetToolExecPayload = async (
+	task: string,
+	related: RelatedTransactionsChain,
+) =>
 	await call_llm_toolcall(`
 You are an System Execution agent.
 
@@ -38,11 +46,8 @@ RULES:
 ONLY ACCEPTABLE OUTPUT FORMAT:
 ToolCallPayload`);
 
-export const RunExec = async (
-	exec_id: string,
-	task: string,
-) => {
-	logger.debug(`RunExec, id: ${exec_id}, task: ${task}`)
+export const RunExec = async (exec_id: string, task: string) => {
+	logger.debug(`RunExec, id: ${exec_id}, task: ${task}`);
 	// set status
 	await setExec({
 		id: exec_id,
@@ -55,7 +60,6 @@ export const RunExec = async (
 	let finalOutput: string = 'FAILED';
 
 	try {
-
 		let toolExecPayload = await GetToolExecPayload(task, related);
 
 		await appendToTransactionLog({
@@ -66,7 +70,7 @@ export const RunExec = async (
 
 		// task execution env
 		const toolExecId = randomUUID();
-		const toolOutput = await ToolExec({toolExecId, task, toolExecPayload});
+		const toolOutput = await ToolExec({ toolExecId, task, toolExecPayload });
 
 		// execution result
 		if (typeof toolOutput === 'string') {
@@ -89,7 +93,6 @@ export const RunExec = async (
 			throw new Error(
 				`toolOutput did not match expected string output type: ${typeof toolOutput}, ${JSON.stringify(toolOutput)}`,
 			);
-
 	} catch (e) {
 		logger.error(`something went wrong in RunExec: ${e}`);
 
