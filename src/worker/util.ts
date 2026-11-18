@@ -14,7 +14,7 @@ import {
 } from '../prompts/types/ApiToolChain.ts';
 import { StandardStreams } from '../prompts/types/ShellExecutor.ts';
 import { redisGet } from '../state/state.ts';
-import { Related, Status, TaskType, Transaction } from '../state/types.ts';
+import { PromptChain, RelatedTransactionsChain, _Status, TaskType, Transaction } from '../state/types.ts';
 import {
 	getExec,
 	getJob,
@@ -74,7 +74,7 @@ export const updateRelated = async ({
 }: {
 	_id: string;
 	type: TaskType;
-	related: Related;
+	related: RelatedTransactionsChain;
 }) => {
 	let success = false;
 
@@ -166,17 +166,17 @@ export const appendToTransactionLog = async ({
 
 		if (!currTx) throw new Error(`no tx found!`);
 
-		const currentReq = [...(currTx?.prompt?.userRequest ?? [])];
-		const currentRes = [...(currTx?.prompt?.llmResponse ?? [])];
+		const currentReq = [...(currTx?.prompt?.userRequestChain ?? [])];
+		const currentRes = [...(currTx?.prompt?.llmResponseChain ?? [])];
 
 		if (newUserRequest && !currentReq.includes(newUserRequest))
 			currentReq.push(newUserRequest);
 		if (newLLMResponse && !currentRes.includes(newLLMResponse))
 			currentRes.push(newLLMResponse);
 
-		const newPrompt = {
-			userRequest: currentReq,
-			llmResponse: currentRes,
+		const newPrompt: PromptChain = {
+			userRequestChain: currentReq,
+			llmResponseChain: currentRes,
 		};
 
 		switch (type) {
@@ -190,6 +190,7 @@ export const appendToTransactionLog = async ({
 				break;
 			case 'TASK':
 			case 'TASK_DIRECT':
+			case 'SHELL_JOB': // for now..?
 				success = await setTask({
 					id: _id,
 					status: currTx?.status,
@@ -204,6 +205,9 @@ export const appendToTransactionLog = async ({
 					prompt: newPrompt,
 					type: currTx?.type,
 				});
+				break;
+			default:
+				logger.warn(`no case for type: ${type}`)
 				break;
 		}
 	} catch (e) {
@@ -299,6 +303,7 @@ const SafeExecute = async (
 
 					logger.warn(`validResult: ${validResult}`);
 				}
+				break;
 			}
 
 			default:
@@ -744,7 +749,7 @@ You are an ai task result summarizer.
 Your job is to parse results and determine a definitive next step is required.
 
 Initial Tasks:
-${currObj?.prompt?.userRequest}
+${currObj?.prompt?.userRequestChain}
 
 Task Results:
 ${currObj?.result}

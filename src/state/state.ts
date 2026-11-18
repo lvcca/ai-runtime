@@ -27,17 +27,17 @@ export const getConnection = async () => {
 	}
 };
 
-export const redisSet = async (tx: Transaction) => {
+export const redisSet = async (transaction: Transaction) => {
 	let successful = false;
 
 	try {
 		const _connection = await getConnection();
 
-		let _new_entry = structuredClone(tx);
+		let _new_entry = structuredClone(transaction);
 
 		// get current val if exists
-		if (await redisExists(tx.id)) {
-			const _existing_entry = await redisGet(tx.id);
+		if (await redisEntryExists(transaction.id)) {
+			const _existing_entry = await redisGet(transaction.id);
 
 			// allow _new_entry overwrite _existing_entry
 			_new_entry = {
@@ -92,18 +92,18 @@ export const redisGetAll = async () => {
 export const redisGet = async (id: string) => {
 	try {
 		const _connection = await getConnection();
-		const tx = await _connection.get(id);
+		const entry = await _connection.get(id);
 
-		if (!tx) throw new Error(`could not find entry with id: ${id}`);
+		if (!entry || typeof entry !== 'string') throw new Error(`could not find entry with id: ${id}`);
 
-		const parsed: Transaction = JSON.parse(tx);
+		const parsed: Transaction = JSON.parse(entry);
 		return structuredClone(parsed);
 	} catch (e) {
 		logger.error(`something went wrong in redisGet: ${e}`);
 	}
 };
 
-export const redisExists = async (id: string) => {
+export const redisEntryExists = async (id: string) => {
 	let exists = false;
 
 	try {

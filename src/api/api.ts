@@ -73,9 +73,7 @@ app.get('/exec/allExec', async (_, res) => {
 	return res.status(200).send(execs);
 });
 
-app.get('/exec/newExec', async (req, res) => {
-	return await newExec({ req, res });
-});
+app.get('/exec/newExec', async (req, res) => await newExec({ req, res }))
 app.get('/exec/deleteExec', async (req, res) => {
 	const id = getHeader(req, 'id');
 	if (!id) res.status(400).send('invalid request');

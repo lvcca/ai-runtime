@@ -1,6 +1,6 @@
 import { call_llm_chat, call_llm_toolcall, PROMPTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { Related, Status, TaskType } from '../state/types.ts';
+import { RelatedTransactionsChain, _Status, TaskType } from '../state/types.ts';
 import { getExec, setExec } from '../state/util.ts';
 import { registry } from '../tools/ToolBootstrap.ts';
 import { ToolExec, appendToTransactionLog } from './util.ts';
@@ -8,7 +8,7 @@ import crypto from 'node:crypto';
 
 const logger = getLogger('ExecutionWorker');
 
-export const GetToolExecPayload = async (task: string, related: Related) =>
+export const GetToolExecPayload = async (task: string, related: RelatedTransactionsChain) =>
 	await call_llm_toolcall(`
 You are an System Execution agent.
 
@@ -41,7 +41,6 @@ ToolCallPayload`);
 export const RunExec = async (
 	exec_id: string,
 	task: string,
-	LLM_DIRECT: boolean,
 ) => {
 	// set status
 	await setExec({
@@ -49,7 +48,7 @@ export const RunExec = async (
 		status: { status: Status.RUNNING },
 	});
 
-	let related: Related | undefined;
+	let related: RelatedTransactionsChain | undefined;
 	// get current
 	const currObj = await getExec(exec_id);
 
@@ -58,7 +57,6 @@ export const RunExec = async (
 	let finalOutput: string = 'FAILED';
 
 	try {
-		if (LLM_DIRECT) finalOutput = await call_llm_chat(`${task}`);
 
 		let ToolExecPayload = await GetToolExecPayload(task, related);
 

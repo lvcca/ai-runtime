@@ -1,8 +1,8 @@
 import { ValidatorResponse } from '../prompts/types/TaskValidator.ts';
 
-export type Prompt = {
-	userRequest?: string[];
-	llmResponse?: string[];
+export type PromptChain = {
+	userRequestChain?: string[];
+	llmResponseChain?: string[];
 };
 
 export const Status = {
@@ -13,10 +13,10 @@ export const Status = {
 	HALTED: 'HALTED',
 } as const;
 
-export type Status = (typeof Status)[keyof typeof Status];
+export type _Status = (typeof Status)[keyof typeof Status];
 
-export type _Status = {
-	status: Status;
+export type Status = {
+	status: _Status;
 	message?: string;
 };
 
@@ -25,11 +25,12 @@ export const TaskType = {
 	TASK: 'TASK',
 	EXECUTION: 'EXECUTION',
 	JOB: 'JOB',
+	SHELL_JOB: 'SHELL_JOB'
 } as const;
 
 export type TaskType = (typeof TaskType)[keyof typeof TaskType];
 
-export type Related =
+export type RelatedTransactionsChain =
 	| {
 			job?: string[];
 			task?: string[];
@@ -40,9 +41,9 @@ export type Related =
 export type Transaction = {
 	id: string;
 	type?: TaskType;
-	status?: _Status;
-	prompt?: Prompt;
-	related?: Related;
+	status?: Status;
+	prompt?: PromptChain;
+	related?: RelatedTransactionsChain;
 	result?: string; // final llm response
 	validatorResponse?: ValidatorResponse;
 };

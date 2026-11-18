@@ -10,22 +10,6 @@ export type ToolEntry = {
 	readonly schema?: string;
 };
 
-export const ToolExecutionWrapper = <TArgs extends any[]>(
-	fn: (...args: TArgs) => Promise<string>,
-) => {
-	return async (...args: TArgs): Promise<string> => {
-		let result = 'FAILED';
-
-		try {
-			result = await fn(...args);
-		} catch (e) {
-			result = `FAILED: ${e instanceof Error ? e.message : String(e)}`;
-		}
-
-		return result;
-	};
-};
-
 export class ToolRegistry {
 	public readonly _tools: Map<string, ToolEntry> = new Map<string, ToolEntry>();
 
@@ -34,7 +18,7 @@ export class ToolRegistry {
 			throw new Error(`Tool '${name}' is already registered`);
 
 		try {
-			logger.info(
+			logger.debug(
 				`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${schema}`,
 			);
 
@@ -48,7 +32,7 @@ export class ToolRegistry {
 
 			const sanityCheck = this._tools.get(name);
 
-			logger.info(`tool sanity check func: ${sanityCheck?.func}`);
+			logger.debug(`tool sanity check func: ${sanityCheck?.func}`);
 		} catch (e) {
 			logger.error(`something went wrong in ToolRegistry register: ${e}`);
 		}
