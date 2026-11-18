@@ -16,9 +16,9 @@ services:
       wait
       "
 
-  ai-orchestrator:
-    build: ../ai-orchestrator
-    container_name: ai-orchestrator
+  ai-runtime:
+    build: ../ai-runtime
+    container_name: ai-runtime
     depends_on:
       - ollama
       - redis
@@ -28,7 +28,7 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       REDIS_URL: redis://redis:6379
     volumes:
-      - ../ai-orchestrator:/app
+      - ../ai-runtime:/app
     working_dir: /app
     restart: unless-stopped
 

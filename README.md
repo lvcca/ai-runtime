@@ -1,18 +1,18 @@
-# ai-orchestrator
+# ai-runtime
 =====================================
 
 ## Overview
 
-a light ai-orchestrator written in typescript.
+a light ai-runtime written in typescript.
 
 ![Demo](demo.gif)
 
 ## Installation
 
 ```bash
-git clone git@github.com:lvcca/ai-orchestrator.git;
+git clone git@github.com:lvcca/ai-runtime.git;
 
-cd ai-orchestrator;
+cd ai-runtime;
 
 docker compose down;
 docker compose up --build --force-recreate;
@@ -58,12 +58,12 @@ Write-Output $output
 
 ## Contributing
 
-We welcome contributions from developers and users. If you'd like to contribute to the ai-orchestrator project, please submit a pull request with your changes.
+We welcome contributions from developers and users. If you'd like to contribute to the ai-runtime project, please submit a pull request with your changes.
 
 ## License
 
-ai-orchestrator is released under the [MIT License](https://opensource.org/licenses/MIT).
+ai-runtime is released under the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Issues
 
-If you encounter any issues or have questions about using ai-orchestrator, please submit an issue on our GitHub repository.
+If you encounter any issues or have questions about using ai-runtime, please submit an issue on our GitHub repository.

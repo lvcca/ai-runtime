@@ -1,9 +1,9 @@
 {
-  "name": "ai-orchestrator",
+  "name": "ai-runtime",
   "version": "1.0.0",
   "description": "",
   "main": "src/main.ts",
-  "repository": { "type": "git", "url": "git+https://github.com/lvcca/ai-orchestrator.git"},
+  "repository": { "type": "git", "url": "git+https://github.com/lvcca/ai-runtime.git"},
   "scripts": {
     "build": "tsc && npm run copy-prompts",
     "start": "npx tsx src/main.ts",
