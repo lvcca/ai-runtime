@@ -413,11 +413,11 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 	let jobs = new Map<string, string | undefined>();
 
 	try {
-		const requiredToolSteps = toolPayload.identified_internal_tools_required; // in order of execution llm decided
+		const toolExecutionSteps = toolPayload.identified_internal_tools_required; // in order of execution llm decided
 
-		for (const step of requiredToolSteps) {
+		for (const step of toolExecutionSteps) {
 			// make new transaction for each step
-			const job_id = crypto.randomUUID();
+			const TID = crypto.randomUUID();
 
 			try {
 				// prevent unnessary executions if pivot identified
@@ -428,11 +428,11 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				 */
 
 				// local tracker
-				jobs.set(job_id, undefined);
+				jobs.set(TID, undefined);
 
 				// redis entry
 				await setJob({
-					id: job_id,
+					id: TID,
 					type: TaskType.JOB,
 					status: {
 						status: Status.QUEUED,
@@ -444,7 +444,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				});
 
 				// add link to main task
-				await AddJob(exec_id, job_id);
+				await AddJob(exec_id, TID);
 
 				// always be type safe with llm generated stuffs
 				let safeToolName: unknown = step['Tool'];
@@ -469,7 +469,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 					`identified tool: ${JSON.stringify(safeToolName)}, params: ${JSON.stringify(params)}`,
 				);
 
-				const foundToolEntry: ToolEntry | undefined = registry.get(
+				const foundToolEntry: ToolEntry | undefined = registry.getToolEntry(
 					safeToolName as string,
 				);
 
@@ -478,14 +478,14 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 						`could not find tool ${JSON.stringify(safeToolName)}`,
 					);
 
-				const result = await SafeExecute(job_id, foundToolEntry, params);
+				const result = await SafeExecute(TID, foundToolEntry, params);
 
 				if (!result) throw new Error(`no result came back from SafeExecute...`);
 
 				final_results = result;
 
 				await setJob({
-					id: job_id,
+					id: TID,
 					type: TaskType.JOB,
 					status: {
 						status: Status.COMPLETED,
@@ -499,7 +499,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				);
 
 				await setJob({
-					id: job_id,
+					id: TID,
 					type: TaskType.JOB,
 					status: {
 						status: Status.FAILED,

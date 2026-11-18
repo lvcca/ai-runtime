@@ -5,7 +5,8 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getLogger } from '../logger/logger.ts';
-import { ToolRegistry } from './ToolRegistry.ts';
+import { ToolRegistry, ToolSchema } from './ToolRegistry.ts';
+import { FILE_SYSTEM_SCHEMA, } from '../llm.ts';
 
 const logger = getLogger('FileSystem');
 
@@ -36,8 +37,8 @@ export const resolvePath = (userPath: string): string => {
 // TOOL FUNCTIONS
 // -------------------
 
-export const list_directory = async (dirPath: string): Promise<string> =>
-	(await fs.readdir(resolvePath(dirPath))).join(',');
+export const list_directory = async (dirPath: string): Promise<string[]> =>
+	(await fs.readdir(resolvePath(dirPath)));
 
 export const read_file = (filePath: string): Promise<string> => {
 	return fs.readFile(resolvePath(filePath), 'utf8');
@@ -46,11 +47,11 @@ export const read_file = (filePath: string): Promise<string> => {
 export const write_file = async (
 	filePath: string,
 	content: string,
-): Promise<string> => {
-	let success = 'FAILED';
+): Promise<boolean> => {
+	let success = false;
 	try {
 		await fs.writeFile(resolvePath(filePath), content, 'utf8');
-		success = `write_file: ${resolvePath(filePath)} SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
@@ -59,67 +60,67 @@ export const write_file = async (
 export const append_file = async (
 	filePath: string,
 	content: string,
-): Promise<string> => {
-	let success = 'FAILED';
+): Promise<boolean> => {
+	let success = false;
 
 	try {
 		await fs.appendFile(resolvePath(filePath), content, 'utf8');
-		success = `append_file: ${resolvePath(filePath)} SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
 };
 
-export const create_directory = async (dirPath: string): Promise<string> => {
-	let success = 'FAILED';
+export const create_directory = async (dirPath: string): Promise<boolean> => {
+	let success = false;
 
 	try {
 		await fs.mkdir(resolvePath(dirPath), { recursive: true });
-		success = `create_directory: ${resolvePath(dirPath)} SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
 };
 
-export const move_file = async (src: string, dst: string): Promise<string> => {
-	let success = 'FAILED';
+export const move_file = async (src: string, dst: string): Promise<boolean> => {
+	let success = false;
 
 	try {
 		await fs.rename(resolvePath(src), resolvePath(dst));
-		success = `move_file: (src: ${resolvePath(src)}, dst: ${resolvePath(dst)}) SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
 };
 
-export const copy_file = async (src: string, dst: string): Promise<string> => {
-	let success = 'FAILED';
+export const copy_file = async (src: string, dst: string): Promise<boolean> => {
+	let success = false;
 
 	try {
 		await fs.copyFile(resolvePath(src), resolvePath(dst));
-		success = `copy_file: (src: ${resolvePath(src)}, dst: ${resolvePath(dst)}) SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
 };
 
-export const delete_file = async (filePath: string): Promise<string> => {
-	let success = 'FAILED';
+export const delete_file = async (filePath: string): Promise<boolean> => {
+	let success = false;
 
 	try {
 		await fs.unlink(resolvePath(filePath));
-		success = `copy_file: (path: ${resolvePath(filePath)}) SUCCESS!`;
+		success = true;
 	} catch (_) {}
 
 	return success;
 };
 
-export const file_exists = async (filePath: string): Promise<string> => {
+export const file_exists = async (filePath: string): Promise<boolean> => {
 	try {
 		const stat = await fs.stat(resolvePath(filePath));
-		return String(stat.isFile());
+		return stat.isFile();
 	} catch {
-		return String(false);
+		return false;
 	}
 };
 
@@ -144,7 +145,7 @@ export const execute_shell = async (command: string): Promise<string> => {
 		shellContext.error = stderr;
 		shellContext.output = stdout;
 	} catch (e) {
-		const msg = `something went wrong in executeShell ${JSON.stringify(e, null, 2)} `;
+		const msg = `something went wrong in executeShell ${JSON.stringify(e, null, 2)}`;
 		if (!shellContext.error) shellContext.error = msg;
 		logger.error(msg);
 	}
@@ -157,7 +158,7 @@ export const execute_shell = async (command: string): Promise<string> => {
 export const search_files = async (
 	directory: string,
 	pattern = '*',
-): Promise<string> => {
+): Promise<string[]> => {
 	const resolved = resolvePath(directory);
 
 	const entries = await fs.readdir(resolved);
@@ -180,25 +181,22 @@ export const search_files = async (
 		}
 	}
 
-	return results.join(',');
+	return results;
 };
 
-export function RegisterTools(registry: ToolRegistry): void {
-	registry.register(
-		'current_working_directory',
-		currentWorkingDirectory,
-		'filesystem',
-	);
-	registry.register('list_directory', list_directory, 'filesystem');
-	registry.register('read_file', read_file, 'filesystem');
-	registry.register('write_file', write_file, 'filesystem');
-	registry.register('append_file', append_file, 'filesystem');
-	registry.register('create_directory', create_directory, 'filesystem');
-	registry.register('move_file', move_file, 'filesystem');
-	registry.register('copy_file', copy_file, 'filesystem');
-	registry.register('delete_file', delete_file, 'filesystem');
-	registry.register('file_exists', file_exists, 'filesystem');
-	registry.register('search_files', search_files, 'filesystem');
-	// registry.register('read_text_chunks', read_text_chunks, 'filesystem');
-	registry.register('execute_shell', execute_shell, 'filesystem');
+export function RegisterTools(registry: ToolRegistry) {
+	const FileSystemSchema: ToolSchema = {name: 'FileSystem', path: FILE_SYSTEM_SCHEMA} 
+	
+	registry.register({name: 'current_working_directory', func: currentWorkingDirectory, toolSchema: FileSystemSchema,});
+	registry.register({name: 'list_directory', func: list_directory, toolSchema: FileSystemSchema});
+	registry.register({name: 'read_file', func: read_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'write_file', func: write_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'append_file', func: append_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'create_directory', func: create_directory, toolSchema: FileSystemSchema});
+	registry.register({name: 'move_file', func: move_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'copy_file', func: copy_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'delete_file', func: delete_file, toolSchema: FileSystemSchema});
+	registry.register({name: 'file_exists', func: file_exists, toolSchema: FileSystemSchema});
+	registry.register({name: 'search_files', func: search_files, toolSchema: FileSystemSchema});
+	registry.register({name: 'execute_shell', func: execute_shell, toolSchema: FileSystemSchema});
 }
