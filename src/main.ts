@@ -12,7 +12,7 @@ app.listen(webServerPort, () => {
 	const msg =
 		`Found schemas: ${JSON.stringify(registry.listSchemas())}, ` +
 		`registered tools: ${JSON.stringify(registry.listTools())}.\n` +
-		`Server started on hostname:port: ${hostname()}:${webServerPort}, env: ${JSON.stringify(_env)}`;
+		`Server started on hostname:port: \'http://${hostname()}:${webServerPort}\', env: ${JSON.stringify(_env, null, 2)}`;
 
 	logger.info(msg);
 });

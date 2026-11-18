@@ -46,8 +46,8 @@ RULES:
 ONLY ACCEPTABLE OUTPUT FORMAT:
 ToolCallPayload`);
 
-export const RunExec = async (exec_id: string, task: string) => {
-	logger.debug(`RunExec, id: ${exec_id}, task: ${task}`);
+export const RunExec = async (exec_id: string, userRequest: string) => {
+	logger.debug(`RunExec, id: ${exec_id}, task: ${userRequest}`);
 	// set status
 	await setExec({
 		id: exec_id,
@@ -60,17 +60,21 @@ export const RunExec = async (exec_id: string, task: string) => {
 	let finalOutput: string = 'FAILED';
 
 	try {
-		let toolExecPayload = await GetToolExecPayload(task, related);
+		let toolExecPayload = await GetToolExecPayload(userRequest, related);
 
 		await appendToTransactionLog({
 			_id: exec_id,
 			type: TaskType.EXECUTION,
-			newUserRequest: task,
+			newUserRequest: userRequest,
 		});
 
 		// task execution env
 		const toolExecId = randomUUID();
-		const toolOutput = await ToolExec({ toolExecId, task, toolExecPayload });
+		const toolOutput = await ToolExec({
+			toolExecId,
+			task: userRequest,
+			toolExecPayload,
+		});
 
 		// execution result
 		if (typeof toolOutput === 'string') {

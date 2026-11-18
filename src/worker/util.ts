@@ -27,6 +27,7 @@ import {
 	getTask,
 	setExec,
 	setJob,
+	setShellJob,
 	setTask,
 } from '../state/util.ts';
 import { registry } from '../tools/ToolBootstrap.ts';
@@ -186,6 +187,15 @@ export const appendToTransactionLog = async ({
 		};
 
 		switch (type) {
+			case TaskType.SHELL_JOB:
+				success = await setShellJob({
+					id: _id,
+					status: currTx?.status,
+					prompt: newPrompt,
+					type: currTx?.type,
+				});
+				break;
+
 			case TaskType.JOB:
 				success = await setJob({
 					id: _id,
@@ -197,7 +207,6 @@ export const appendToTransactionLog = async ({
 
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
-			case TaskType.SHELL_JOB: // for now..?
 				success = await setTask({
 					id: _id,
 					status: currTx?.status,
@@ -755,7 +764,12 @@ export type SummaryType = {
 	artifacts: string[];
 };
 
-export const SummarizeTask = async (id: string) => {
+/**
+ * summarize task
+ * @param id
+ * @returns
+ */
+export const SummarizeLlmTransaction = async (id: string) => {
 	const currObj = await redisGet(id);
 	const _obj = JSON.stringify(currObj);
 
