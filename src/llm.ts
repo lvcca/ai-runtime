@@ -103,7 +103,7 @@ const SHELL_RESULTS_TYPE_FILE = './prompts/types/ShellResults.ts';
 const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.ts';
 
 // schemas
-const FILE_SYSTEM_SCHEMA = './prompts/types/FileSystemSchema.ts';
+export const FILE_SYSTEM_SCHEMA = './prompts/types/FileSystemSchema.ts';
 
 export const PROMPTS = {
 	tasks: await load_context(CODING_TASKS_PROMPTS_FILE),

@@ -6,9 +6,9 @@ export const FileSystemSchema: Tool[] = [
 		description: 'Get current working directory.',
 		parameters: [],
 		return: {
-			name: 'directory name',
+			name: 'Current working directory',
 			type: 'string',
-			value: 'String of current working directory.',
+			value: 'String of current working directory name.',
 			required: true,
 		},
 	},
@@ -26,8 +26,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'entries',
-			type: 'array<object>',
-			value: 'List of files and directories with name, type, and size.',
+			type: 'array<string>',
+			value: 'List of files, as strings, from fs.readdir',
 			required: true,
 		},
 	},
@@ -45,8 +45,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'content',
-			type: 'object',
-			value: 'Contains file path and UTF-8 file content.',
+			type: 'string',
+			value: 'Contains file content in UTF-8 format.',
 			required: true,
 		},
 	},
@@ -70,8 +70,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status and written file path.',
+			type: 'boolean',
+			value: 'Contains success status of written file.',
 			required: true,
 		},
 	},
@@ -95,8 +95,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status and updated file path.',
+			type: 'boolean',
+			value: 'Contains success status of file append.',
 			required: true,
 		},
 	},
@@ -114,33 +114,33 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status and created directory path.',
+			type: 'boolean',
+			value: 'Contains success status of directory creation.',
 			required: true,
 		},
 	},
 
 	{
 		name: 'move_file',
-		description: 'Move or rename a file inside the workspace.',
+		description: 'Move or rename a file.',
 		parameters: [
 			{
 				name: 'src',
 				type: 'string',
-				value: 'Source file path inside the workspace.',
+				value: 'Source file path.',
 				required: true,
 			},
 			{
 				name: 'dst',
 				type: 'string',
-				value: 'Destination file path inside the workspace.',
+				value: 'Destination file path.',
 				required: true,
 			},
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status, source path, and destination path.',
+			type: 'boolean',
+			value: 'Contains success status of file move.',
 			required: true,
 		},
 	},
@@ -164,8 +164,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status, source path, and destination path.',
+			type: 'boolean',
+			value: 'Contains success status of file copy.',
 			required: true,
 		},
 	},
@@ -183,8 +183,8 @@ export const FileSystemSchema: Tool[] = [
 		],
 		return: {
 			name: 'result',
-			type: 'object',
-			value: 'Contains success status and deleted file path.',
+			type: 'boolean',
+			value: 'Contains success status.',
 			required: true,
 		},
 	},
@@ -249,38 +249,6 @@ export const FileSystemSchema: Tool[] = [
 			name: 'matches',
 			type: 'array<string>',
 			value: 'List of matching file paths.',
-			required: true,
-		},
-	},
-
-	{
-		name: 'read_text_chunks',
-		description:
-			'Read a portion of a text file by line range inside the workspace.',
-		parameters: [
-			{
-				name: 'path',
-				type: 'string',
-				value: 'Relative text file path inside the workspace root.',
-				required: true,
-			},
-			{
-				name: 'start_line',
-				type: 'integer',
-				value: 'Starting line number.',
-				required: true,
-			},
-			{
-				name: 'end_line',
-				type: 'integer',
-				value: 'Ending line number.',
-				required: true,
-			},
-		],
-		return: {
-			name: 'chunk',
-			type: 'object',
-			value: 'Contains extracted text content and requested line range.',
 			required: true,
 		},
 	},
