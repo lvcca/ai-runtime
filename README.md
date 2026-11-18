@@ -1,4 +1,5 @@
-# ai-runtime
+# AI-Runtime - (AIR)
+
 =====================================
 
 ## Overview
@@ -20,6 +21,7 @@ docker compose up --build --force-recreate;
 
 ## Usage
 
+### javascript
 ```typescript
 fetch("http://localhost:8080/exec/newExec", {
   method: "GET",
@@ -31,6 +33,7 @@ fetch("http://localhost:8080/exec/newExec", {
 }).then(res => res.text()).then(console.log).catch(console.error)
 ```
 
+### shell
 ```shell
 curl -X GET "http://localhost:8080/exec/newExec" \
   -H "Content-Type: application/json" \
@@ -38,6 +41,7 @@ curl -X GET "http://localhost:8080/exec/newExec" \
   -H "id: 550e8400-e29b-41d4-a716-446655440000" 
 ```
 
+### powershell
 ```powershell
 $url = "http://localhost:8080/exec/newExec"
 $headers = @{
