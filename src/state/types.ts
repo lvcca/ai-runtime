@@ -21,7 +21,7 @@ export type Status = {
 };
 
 export const TaskType = {
-	TASK_DIRECT: 'TASK_DIRECT',
+	TASK_DIRECT: 'TASK_DIRECT', // for direct llm query, no fancy tool or runtime stuffs
 	TASK: 'TASK',
 	EXECUTION: 'EXECUTION',
 	JOB: 'JOB',
