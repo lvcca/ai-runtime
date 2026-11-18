@@ -2,7 +2,7 @@ import { call_llm_task_transaction_manager } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import { redisGet } from '../state/state.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
-import { parseJsonSafe, SummarizeTask } from '../worker/util.ts';
+import { parseJsonSafe, SummarizeLlmTransaction } from '../worker/util.ts';
 
 const logger = getLogger('TransactionManager');
 
@@ -24,7 +24,7 @@ export type TransactionManagerResponse = {
 	confidence?: number;
 };
 
-export const ManageTransaction = async (id: string) => {
+export const ManageExecutionResults = async (id: string) => {
 	if (!isValidUUID(id))
 		throw new Error(
 			'cannot process this uuid, it has been flagged as invalid...',
@@ -36,11 +36,11 @@ export const ManageTransaction = async (id: string) => {
 
 	logger.debug(`execution_id: ${id}`);
 
-	const summary = await SummarizeTask(id);
+	const summary = await SummarizeLlmTransaction(id);
 
 	let final_results: TransactionManagerResponse = {};
 
-	const initialResponse = await call_llm_task_transaction_manager(`
+	const txMgrResponse = await call_llm_task_transaction_manager(`
 You are Task Transaction Manager.
 
 Your job is to take analyze executed task results and determine next steps. If the current transaction_status is not "success" a next_action is required. The "next_action" object should attempt to use all information involved to determine how to accomplish the initial task.
@@ -80,7 +80,7 @@ ONLY ACCEPTABLE OUTPUT FORMAT:
 `);
 
 	final_results =
-		await parseJsonSafe<TransactionManagerResponse>(initialResponse);
+		await parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
 
 	logger.debug(
 		`ManageTransaction final_results: ${JSON.stringify(final_results)}`,

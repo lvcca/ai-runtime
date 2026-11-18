@@ -21,13 +21,13 @@ import { call_llm_task_validator } from '../llm.ts';
 import {
 	extractResponseBlock,
 	parseJsonSafe,
-	SummarizeTask,
+	SummarizeLlmTransaction,
 } from '../worker/util.ts';
 import { ValidatorResponse } from '../prompts/types/TaskValidator.ts';
 import { RunTask } from '../worker/TaskWorker.ts';
 import { RunExec } from '../worker/ExecutionWorker.ts';
 import {
-	ManageTransaction,
+	ManageExecutionResults,
 	TransactionManagerResponse,
 } from '../service/TransactionManager.ts';
 
@@ -366,25 +366,25 @@ export const newExec = async ({
 		const validatorResponse = await validate(exec_id);
 		const currObj = await getExec(exec_id);
 		//
-		const summary = await SummarizeTask(exec_id);
+		const summary = await SummarizeLlmTransaction(exec_id);
 		//
-		const ManagerResponse = await ManageTransaction(exec_id);
+		const executionResults = await ManageExecutionResults(exec_id);
 
 		if (
-			ManagerResponse.next_action &&
-			ManagerResponse?.transaction_status !== 'success'
+			executionResults.next_action &&
+			executionResults?.transaction_status !== 'success'
 		)
-			return await handleManagerNextAction(exec_id, ManagerResponse);
+			return await handleManagerNextAction(exec_id, executionResults);
 
 		const response = {
 			llm_response,
 			validatorResponse,
 			currObj,
 			summary,
-			ManagerResponse,
+			ManagerResponse: executionResults,
 		};
 
-		logger.debug(`responding to client: ${JSON.stringify(response)}`);
+		logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
 
 		// else
 		return res?.status(200).send(response);

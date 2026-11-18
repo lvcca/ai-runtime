@@ -4,6 +4,17 @@ import { getLogger } from '../logger/logger.ts';
 
 const logger = getLogger('state_util');
 
+export const setShellJob = async (tx: Transaction) => {
+	if (tx.type === undefined || tx.type !== TaskType.SHELL_JOB)
+		throw new Error(
+			`task type mismatch: requested: ${tx.type}, expected ${TaskType.TASK} || ${TaskType.TASK_DIRECT}`,
+		);
+
+	const successful = await redisSet(tx);
+	logger.info(`setShellJob: successful ${successful}`);
+	return successful;
+};
+
 export const setTask = async (tx: Transaction) => {
 	if (
 		tx.type !== undefined &&
