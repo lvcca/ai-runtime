@@ -3,7 +3,6 @@ import {
 	type Transaction,
 	PromptChain,
 	RelatedTransactionsChain,
-	_Status,
 	TaskType,
 	Status,
 } from '../state/types.ts';

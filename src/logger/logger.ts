@@ -1,8 +1,7 @@
 // https://stackoverflow.com/questions/51012150/winston-3-0-colorize-whole-output-on-console
 
 import { createLogger, format, transports, addColors } from 'winston';
-const { combine, colorize, label, timestamp, json, prettyPrint, printf } =
-	format;
+const { colorize, timestamp, json, printf } = format;
 
 let _format = format.combine(
 	json({ space: 1 }),

@@ -14,7 +14,7 @@ app.use((req, res, next) => {
 	let id: string = randomUUID();
 
 	try {
-		let _id = getHeader(req, 'id');
+		const _id = getHeader(req, 'id');
 		if (isValidUUID(_id)) id = _id;
 	} catch (e) {
 		logger.debug(`something went wrong getting id header, error: ${e}`);
@@ -73,7 +73,7 @@ app.get('/exec/allExec', async (_, res) => {
 	return res.status(200).send(execs);
 });
 
-app.get('/exec/newExec', async (req, res) => await newExec({ req, res }))
+app.get('/exec/newExec', async (req, res) => await newExec({ req, res }));
 app.get('/exec/deleteExec', async (req, res) => {
 	const id = getHeader(req, 'id');
 	if (!id) res.status(400).send('invalid request');

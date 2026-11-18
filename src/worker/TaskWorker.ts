@@ -28,18 +28,17 @@ export const RunTask = async (
 
 	try {
 		if (LLM_DIRECT) final_output = await call_llm_chat(`${task}`);
-
 		else {
 			plan = await GetPlan(task);
-			
+
 			const RevisePlanResult: PlannerWorkerResultType = await RevisePlan(
 				task_id,
 				task,
 				plan,
 			);
-			
+
 			revised_plan = RevisePlanResult.steps.join();
-			
+
 			final_output = await call_llm_tasks(`
 	You are a task execution agent.
 	

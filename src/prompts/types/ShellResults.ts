@@ -3,3 +3,5 @@ type ShellResults = {
 	output: string;
 	error: string;
 };
+
+export { ShellResults };

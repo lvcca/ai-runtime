@@ -9,3 +9,5 @@ type ShellBranchAnalysis = {
 type ShellBranchAnalysisSimplified = {
 	next_step: string;
 };
+
+export { ShellBranchAnalysis, ShellBranchAnalysisSimplified };
