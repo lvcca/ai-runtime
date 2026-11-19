@@ -48,6 +48,15 @@ export const setJob = async (tx: Transaction & { job?: string }) => {
 	return successful;
 };
 
+export const getShellJob = async (id: string) => {
+	const entry = await redisGet(id);
+	if (entry && entry?.type !== TaskType.SHELL_JOB)
+		throw new Error(
+			`task type mismatch: requested ${TaskType.SHELL_JOB} received: ${entry?.type}`,
+		);
+	return entry;
+};
+
 export const getTask = async (id: string) => {
 	const entry = await redisGet(id);
 	if (

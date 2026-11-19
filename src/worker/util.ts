@@ -24,6 +24,7 @@ import {
 import {
 	getExec,
 	getJob,
+	getShellJob,
 	getTask,
 	setExec,
 	setJob,
@@ -166,18 +167,31 @@ export const appendToTransactionLog = async ({
 			case TaskType.TASK:
 				currTx = await getTask(_id);
 				break;
+
 			case TaskType.EXECUTION:
 				currTx = await getExec(_id);
 				break;
+
 			case TaskType.JOB:
 				currTx = await getJob(_id);
 				break;
+
+			case TaskType.SHELL_JOB:
+				currTx = await getShellJob(_id);
+				break;
+
+			default:
+				throw new Error(`no case for ${type} in appendToTransactionLog!`);
 		}
 
 		if (!currTx) throw new Error(`no tx found!`);
 
-		const currentReq = [...(currTx?.prompt?.userRequestChain ?? [])];
-		const currentRes = [...(currTx?.prompt?.llmResponseChain ?? [])];
+		const currentReq = structuredClone([
+			...(currTx?.prompt?.userRequestChain ?? []),
+		]);
+		const currentRes = structuredClone([
+			...(currTx?.prompt?.llmResponseChain ?? []),
+		]);
 
 		if (newUserRequest && !currentReq.includes(newUserRequest))
 			currentReq.push(newUserRequest);
