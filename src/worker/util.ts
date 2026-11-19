@@ -123,8 +123,8 @@ export const updateRelated = async ({
 		const newTask = related?.task;
 		if (newTask)
 			for (let i = 0; i < newTask?.length; i++)
-				if (!currEntry.related?.exec?.includes(newTask[i]))
-					currEntry.related?.exec?.push(newTask[i]);
+				if (!currEntry.related?.task?.includes(newTask[i]))
+					currEntry.related?.task?.push(newTask[i]);
 
 		switch (type) {
 			case TaskType.EXECUTION:

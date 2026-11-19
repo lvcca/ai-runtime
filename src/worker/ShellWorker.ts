@@ -23,11 +23,11 @@ export const RunShellTask = async (task_id: string, task: string) => {
 	try {
 		plan = await GetPlan(task);
 
-		const result: PlannerWorkerResultType = await RevisePlan(
+		const result: PlannerWorkerResultType = await RevisePlan({
 			task_id,
 			task,
 			plan,
-		);
+		});
 
 		revised_plan = result.steps.join();
 
@@ -57,6 +57,7 @@ RULES:
 		});
 
 		status = Status.COMPLETED;
+
 	} catch (e) {
 		logger.error(`something went wrong in TaskWorker:RunTask: ${e}`);
 

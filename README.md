@@ -64,6 +64,11 @@ Write-Output $output
 
 We welcome contributions from developers and users. If you'd like to contribute to the ai-runtime project, please submit a pull request with your changes.
 
+## Philosophy
+
+AI-Runtime is responsible for turning objectives into completed outcomes, using AI reasoning and available execution capabilities.
+Every major feature should support that objective.
+
 ## License
 
 ai-runtime is released under the [MIT License](https://opensource.org/licenses/MIT).

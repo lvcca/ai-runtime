@@ -284,7 +284,7 @@ Output FORMAT:
 	return validatorResponse;
 };
 
-export const run = async (id: string, type: TaskType) => {
+export const runEntry = async (id: string, type: TaskType) => {
 	let result: string = 'FAILED';
 
 	const currentTx = await redisGet(id);
@@ -316,7 +316,7 @@ export const run = async (id: string, type: TaskType) => {
 	return result;
 };
 
-const handleManagerNextAction = async (
+const getExecManagerNextAction = async (
 	exec_id: string,
 	managerResponse: TransactionManagerResponse,
 ) => {
@@ -329,10 +329,12 @@ const handleManagerNextAction = async (
 		case 'retry':
 			const prompt = managerResponse.next_action.prompt;
 
-			await newExec({
+			await newExecCommon({
 				_id: exec_id,
 				_task: prompt,
 			});
+
+			// next actions here
 
 			success = true;
 	}
@@ -340,7 +342,7 @@ const handleManagerNextAction = async (
 	return success;
 };
 
-export const newExec = async ({
+export const newExecCommon = async ({
 	req,
 	res,
 	_id,
@@ -362,19 +364,25 @@ export const newExec = async ({
 			_task,
 		});
 
-		const llm_response = await run(exec_id, TaskType.EXECUTION);
+		const llm_response = await runEntry(exec_id, TaskType.EXECUTION);
 		const validatorResponse = await validate(exec_id);
 		const currObj = await getExec(exec_id);
+
 		//
 		const summary = await SummarizeLlmTransaction(exec_id);
 		//
+
 		const executionResults = await ManageExecutionResults(exec_id);
 
 		if (
 			executionResults.next_action &&
 			executionResults?.transaction_status !== 'success'
-		)
-			return await handleManagerNextAction(exec_id, executionResults);
+		) {
+			const res = await getExecManagerNextAction(exec_id, executionResults);
+			// if branching?
+			// remove return
+			return res; //<-- for lint #TODO fix me
+		}
 
 		const response = {
 			llm_response,

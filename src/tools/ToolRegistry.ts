@@ -51,6 +51,7 @@ export class ToolRegistry {
 	 * @param toolSchema 	- Tool schema, machine's type def
 	 * @param sanityCheck 	- run a sanity test post registration
 	 * @param overwrite 	- overwrite existing entries with the same name
+	 * @method
 	 */
 
 	public register({

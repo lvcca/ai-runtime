@@ -37,12 +37,17 @@ export const GetPlan = async (task: string) =>
     ${task}
 `);
 
-export const RevisePlan = async (
-	task_id: string,
-	task: string,
-	plan: string,
+export const RevisePlan = async ({
+	task_id,
+	task,
+	plan,
 	depth = 5,
-): Promise<PlannerWorkerResultType> => {
+}: {
+	task_id: string;
+	task: string;
+	plan: string;
+	depth?: number;
+}): Promise<PlannerWorkerResultType> => {
 	// recursion exit
 	if (depth == 0) {
 		await appendToTransactionLog({
@@ -112,7 +117,13 @@ ${JSON.stringify({
 
 	const result = await parseJsonSafe<PlannerWorkerResultType>(raw);
 
-	if (!result) return RevisePlan(task_id, task, plan, depth - 1);
+	if (!result)
+		return RevisePlan({
+			task_id,
+			task,
+			plan,
+			depth: depth - 1,
+		});
 
 	if (result.approved) return result;
 	// if not approved
@@ -125,6 +136,11 @@ ${JSON.stringify({
 		if (plan_feedback)
 			_new_plan = `${new_plan}\n\nThe previous plan did not accomplish the following: ${JSON.stringify(plan_feedback)}\n\n`;
 
-		return RevisePlan(task_id, task, _new_plan, depth - 1);
+		return RevisePlan({
+			task_id,
+			task,
+			plan: _new_plan,
+			depth: depth - 1,
+		});
 	}
 };
