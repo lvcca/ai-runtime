@@ -77,7 +77,7 @@ ai-runtime is released under the [MIT License](https://opensource.org/licenses/M
 
 If you encounter any issues or have questions about using ai-runtime, please submit an issue on our GitHub repository.
 
-### Open Task
+### Open Tasks
  * ShellJob Workflow
  * Runtime Tool Loading / dynamic tool chain
- * forever tech debt 
+ * forever tech debt, @TODO
