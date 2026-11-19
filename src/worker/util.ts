@@ -203,41 +203,26 @@ export const appendToTransactionLog = async ({
 			llmResponseChain: currentRes,
 		};
 
+		const _tx: Transaction = {
+			id: _id,
+			status: currTx?.status,
+			prompt: newPrompt,
+			type: currTx?.type,
+		};
+
 		switch (type) {
 			case TaskType.SHELL_JOB:
-				success = await setShellJob({
-					id: _id,
-					status: currTx?.status,
-					prompt: newPrompt,
-					type: currTx?.type,
-				});
+				success = await setShellJob(_tx);
 				break;
-
 			case TaskType.JOB:
-				success = await setJob({
-					id: _id,
-					status: currTx?.status,
-					prompt: newPrompt,
-					type: currTx?.type,
-				});
+				success = await setJob(_tx);
 				break;
-
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
-				success = await setTask({
-					id: _id,
-					status: currTx?.status,
-					prompt: newPrompt,
-					type: currTx?.type,
-				});
+				success = await setTask(_tx);
 				break;
 			case TaskType.EXECUTION:
-				success = await setExec({
-					id: _id,
-					status: currTx?.status,
-					prompt: newPrompt,
-					type: currTx?.type,
-				});
+				success = await setExec(_tx);
 				break;
 			default:
 				logger.warn(`no case for type: ${type}`);
