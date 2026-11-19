@@ -52,11 +52,17 @@ export const call_LLM = async (
 	}
 };
 
-const load_context = async (prompts_md_file: string) => {
+const load_context = async ({
+	prompts_md_file,
+	verbose,
+}: {
+	prompts_md_file: string;
+	verbose?: boolean;
+}) => {
 	let PROMPTS_CONTENT = '\n\n-----BEGIN CONTEXT-----\n\n';
 	const CONTEXT_END = '\n\n-----END CONTEXT-----\n\n';
 
-	logger.info(`prompts_md_file: ${prompts_md_file}`);
+	if (verbose) logger.debug(`prompts_md_file: ${prompts_md_file}`);
 
 	try {
 		const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -64,7 +70,7 @@ const load_context = async (prompts_md_file: string) => {
 		const filePath = path.join(appDistDir, prompts_md_file);
 		const file_string = await readFile(filePath, 'utf8');
 
-		logger.info(`file_string: ${file_string}`);
+		if (verbose) logger.debug(`file_string: ${file_string}`);
 
 		PROMPTS_CONTENT += file_string;
 		PROMPTS_CONTENT += CONTEXT_END;
@@ -105,39 +111,59 @@ const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.d.ts';
 export const FILE_SYSTEM_SCHEMA = './prompts/types/FileSystemSchema.ts';
 
 export const PROMPTS = {
-	tasks: await load_context(CODING_TASKS_PROMPTS_FILE),
-	execution: await load_context(EXECUTION_PROMPTS_FILE),
-	chat: await load_context(CHAT_PROMPTS_FILE),
-	tool_narrower: await load_context(TOOL_NARROWER_PROMPTS_FILE),
-	task_result_validator: await load_context(TASK_RESULTS_VALIDATOR),
-	task_transaction_manager: await load_context(TASK_TRANSACTION_MANAGER),
-	task_result_validator_type: await load_context(TASK_RESULTS_VALIDATOR_TYPES),
-	task_result_junction_manager: await load_context(
-		TASK_RESULT_JUNCTION_MANAGER,
-	),
-	task_result_summarizer: await load_context(TASK_RESULTS_SUMMARIZER),
+	tasks: await load_context({ prompts_md_file: CODING_TASKS_PROMPTS_FILE }),
+	execution: await load_context({ prompts_md_file: EXECUTION_PROMPTS_FILE }),
+	chat: await load_context({ prompts_md_file: CHAT_PROMPTS_FILE }),
+	tool_narrower: await load_context({
+		prompts_md_file: TOOL_NARROWER_PROMPTS_FILE,
+	}),
+	task_result_validator: await load_context({
+		prompts_md_file: TASK_RESULTS_VALIDATOR,
+	}),
+	task_transaction_manager: await load_context({
+		prompts_md_file: TASK_TRANSACTION_MANAGER,
+	}),
+	task_result_validator_type: await load_context({
+		prompts_md_file: TASK_RESULTS_VALIDATOR_TYPES,
+	}),
+	task_result_junction_manager: await load_context({
+		prompts_md_file: TASK_RESULT_JUNCTION_MANAGER,
+	}),
+	task_result_summarizer: await load_context({
+		prompts_md_file: TASK_RESULTS_SUMMARIZER,
+	}),
 	// aux
-	tool_types: await load_context(TOOL_API_TYPE_FILE),
-	karpathy_guidelines: await load_context(KARPATHY_GUIDELINES_PROMPTS_FILE),
+	tool_types: await load_context({ prompts_md_file: TOOL_API_TYPE_FILE }),
+	karpathy_guidelines: await load_context({
+		prompts_md_file: KARPATHY_GUIDELINES_PROMPTS_FILE,
+	}),
 	// schemas
-	file_system_schema: await load_context(FILE_SYSTEM_SCHEMA),
+	file_system_schema: await load_context({
+		prompts_md_file: FILE_SYSTEM_SCHEMA,
+	}),
 	// shell executor stuffs
-	shell_executor: await load_context(SHELL_EXECUTOR_PROMPTS_FILE),
-	shell_executor_types: await load_context(SHELL_EXECUTOR_TYPE_FILE),
-	shell_executor_branch_analysis_types: await load_context(
-		SHELL_BRANCH_ANALYSIS_TYPE_FILE,
-	),
-	shell_executor_branch_analyst: await load_context(
-		SHELL_EXECUTOR_BRANCH_PROMPTS_FILE,
-	),
-	shell_executor_branch_simplifier: await load_context(
-		SHELL_EXECUTOR_BRANCH_SIMPLIFIER_PROMPTS_FILE,
-	),
+	shell_executor: await load_context({
+		prompts_md_file: SHELL_EXECUTOR_PROMPTS_FILE,
+	}),
+	shell_executor_types: await load_context({
+		prompts_md_file: SHELL_EXECUTOR_TYPE_FILE,
+	}),
+	shell_executor_branch_analysis_types: await load_context({
+		prompts_md_file: SHELL_BRANCH_ANALYSIS_TYPE_FILE,
+	}),
+	shell_executor_branch_analyst: await load_context({
+		prompts_md_file: SHELL_EXECUTOR_BRANCH_PROMPTS_FILE,
+	}),
+	shell_executor_branch_simplifier: await load_context({
+		prompts_md_file: SHELL_EXECUTOR_BRANCH_SIMPLIFIER_PROMPTS_FILE,
+	}),
 	// shell results
-	shell_results_analyzer: await load_context(
-		SHELL_RESULTS_ANALYZER_PROMPTS_FILE,
-	),
-	shell_results_types: await load_context(SHELL_RESULTS_TYPE_FILE),
+	shell_results_analyzer: await load_context({
+		prompts_md_file: SHELL_RESULTS_ANALYZER_PROMPTS_FILE,
+	}),
+	shell_results_types: await load_context({
+		prompts_md_file: SHELL_RESULTS_TYPE_FILE,
+	}),
 } as const;
 
 export type PROMPTS = (typeof PROMPTS)[keyof typeof PROMPTS];

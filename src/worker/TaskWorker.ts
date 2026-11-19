@@ -35,11 +35,11 @@ export const RunTask = async (
 		else {
 			plan = await GetPlan(task);
 
-			const RevisePlanResult: PlannerWorkerResultType = await RevisePlan(
+			const RevisePlanResult: PlannerWorkerResultType = await RevisePlan({
 				task_id,
 				task,
 				plan,
-			);
+			});
 
 			revised_plan = RevisePlanResult.steps.join();
 
