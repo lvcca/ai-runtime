@@ -7,7 +7,7 @@ import {
 	Status,
 } from '../state/types.ts';
 import { getExec, setExec } from '../state/util.ts';
-import { registry } from '../tools/ToolBootstrap.ts';
+import { toolRegistry } from '../tools/ToolRegistry.ts';
 import { ToolExec, appendToTransactionLog } from './util.ts';
 import { randomUUID } from 'node:crypto';
 
@@ -23,7 +23,7 @@ You are an System Execution agent.
 Your job is to take decomposed tasks written into concise executable steps and execute them using internal APIs identified in the ToolSchemas.
 
 ToolSchemas:
-${registry.listSchemas()}
+${toolRegistry.listSchemas()}
 ${PROMPTS['file_system_schema']}
 
 Tool Request Format:

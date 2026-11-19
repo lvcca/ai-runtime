@@ -30,8 +30,11 @@ import {
 	setShellJob,
 	setTask,
 } from '../state/util.ts';
-import { registry } from '../tools/ToolBootstrap.ts';
-import { _func, ToolEntry } from '../tools/ToolRegistry.ts';
+import {
+	_func,
+	RegisteredToolEntry,
+	toolRegistry,
+} from '../tools/ToolRegistry.ts';
 import crypto from 'node:crypto';
 
 const logger = getLogger('worker_util');
@@ -64,8 +67,8 @@ export const extractResponseBlock = async (text: string) => {
 			logger.error(`extracted text was not valid json, ${e}`);
 		}
 
-		if (validJson) {
-			logger.info(`no match found defaulting to text passed in: ${text}`);
+		if (!validJson) {
+			logger.debug(`no match found defaulting to text passed in: ${text}`);
 			return text;
 		} else
 			throw new Error(
@@ -260,7 +263,7 @@ export const execWrapper = async (func: _func, args: string[]) => {
 
 const SafeExecute = async (
 	key: string,
-	tool: ToolEntry,
+	tool: RegisteredToolEntry,
 	Params: Parameter[],
 ) => {
 	if (!tool.func)
@@ -469,9 +472,8 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 					`identified tool: ${JSON.stringify(safeToolName)}, params: ${JSON.stringify(params)}`,
 				);
 
-				const foundToolEntry: ToolEntry | undefined = registry.getToolEntry(
-					safeToolName as string,
-				);
+				const foundToolEntry: RegisteredToolEntry | undefined =
+					toolRegistry.getRegisteredToolEntry(safeToolName as string);
 
 				if (!foundToolEntry)
 					throw new Error(

@@ -20,7 +20,7 @@ export type Tool = {
 	return: Parameter;
 };
 
-export type ToolEntry = {
+type ToolEntry = {
 	Tool: Tool;
 	Params: Parameter[];
 	Justification: string;

@@ -5,8 +5,9 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getLogger } from '../logger/logger.ts';
-import { ToolRegistry, ToolSchema } from './ToolRegistry.ts';
-import { FILE_SYSTEM_SCHEMA, } from '../llm.ts';
+import { ToolRegistry } from './ToolRegistry.ts';
+import { FILE_SYSTEM_SCHEMA } from '../llm.ts';
+import { _FileSystemSchema } from '../prompts/schemas/FileSystemSchema.ts';
 
 const logger = getLogger('FileSystem');
 
@@ -38,7 +39,7 @@ export const resolvePath = (userPath: string): string => {
 // -------------------
 
 export const list_directory = async (dirPath: string): Promise<string[]> =>
-	(await fs.readdir(resolvePath(dirPath)));
+	await fs.readdir(resolvePath(dirPath));
 
 export const read_file = (filePath: string): Promise<string> => {
 	return fs.readFile(resolvePath(filePath), 'utf8');
@@ -185,18 +186,64 @@ export const search_files = async (
 };
 
 export function RegisterTools(registry: ToolRegistry) {
-	const FileSystemSchema: ToolSchema = {name: 'FileSystem', path: FILE_SYSTEM_SCHEMA} 
-	
-	registry.register({name: 'current_working_directory', func: currentWorkingDirectory, toolSchema: FileSystemSchema,});
-	registry.register({name: 'list_directory', func: list_directory, toolSchema: FileSystemSchema});
-	registry.register({name: 'read_file', func: read_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'write_file', func: write_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'append_file', func: append_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'create_directory', func: create_directory, toolSchema: FileSystemSchema});
-	registry.register({name: 'move_file', func: move_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'copy_file', func: copy_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'delete_file', func: delete_file, toolSchema: FileSystemSchema});
-	registry.register({name: 'file_exists', func: file_exists, toolSchema: FileSystemSchema});
-	registry.register({name: 'search_files', func: search_files, toolSchema: FileSystemSchema});
-	registry.register({name: 'execute_shell', func: execute_shell, toolSchema: FileSystemSchema});
+	registry.register({
+		name: 'current_working_directory',
+		func: currentWorkingDirectory,
+		toolSchema: _FileSystemSchema.current_working_directory,
+	});
+	registry.register({
+		name: 'list_directory',
+		func: list_directory,
+		toolSchema: _FileSystemSchema.list_directory,
+	});
+	registry.register({
+		name: 'read_file',
+		func: read_file,
+		toolSchema: _FileSystemSchema.read_file,
+	});
+	registry.register({
+		name: 'write_file',
+		func: write_file,
+		toolSchema: _FileSystemSchema.write_file,
+	});
+	registry.register({
+		name: 'append_file',
+		func: append_file,
+		toolSchema: _FileSystemSchema.append_file,
+	});
+	registry.register({
+		name: 'create_directory',
+		func: create_directory,
+		toolSchema: _FileSystemSchema.create_directory,
+	});
+	registry.register({
+		name: 'move_file',
+		func: move_file,
+		toolSchema: _FileSystemSchema.move_file,
+	});
+	registry.register({
+		name: 'copy_file',
+		func: copy_file,
+		toolSchema: _FileSystemSchema.copy_file,
+	});
+	registry.register({
+		name: 'delete_file',
+		func: delete_file,
+		toolSchema: _FileSystemSchema.delete_file,
+	});
+	registry.register({
+		name: 'file_exists',
+		func: file_exists,
+		toolSchema: _FileSystemSchema.file_exists,
+	});
+	registry.register({
+		name: 'search_files',
+		func: search_files,
+		toolSchema: _FileSystemSchema.search_files,
+	});
+	registry.register({
+		name: 'execute_shell',
+		func: execute_shell,
+		toolSchema: _FileSystemSchema.execute_shell,
+	});
 }
