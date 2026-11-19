@@ -57,7 +57,6 @@ RULES:
 		});
 
 		status = Status.COMPLETED;
-
 	} catch (e) {
 		logger.error(`something went wrong in TaskWorker:RunTask: ${e}`);
 

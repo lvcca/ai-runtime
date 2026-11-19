@@ -6,6 +6,9 @@ import path from 'node:path';
 
 const logger = getLogger('llm');
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { GetPlan } from './worker/Planner.ts'; // just here for doc ref, @TODO fix me pls
+
 const LLM_MODEL = {
 	LLAMA_3_1: 'llama3.1',
 	QWEN3_CODER: 'qwen3-coder:latest',
@@ -108,7 +111,7 @@ const SHELL_RESULTS_TYPE_FILE = './prompts/types/ShellResults.d.ts';
 const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.d.ts';
 
 // schemas
-export const FILE_SYSTEM_SCHEMA = './prompts/types/FileSystemSchema.ts';
+export const FILE_SYSTEM_SCHEMA = './prompts/schemas/FileSystemSchema.ts';
 
 export const PROMPTS = {
 	tasks: await load_context({ prompts_md_file: CODING_TASKS_PROMPTS_FILE }),
@@ -176,6 +179,11 @@ export const call_llm_chat = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link GetPlan}
+ * @param prompt
+ * @returns
+ */
 export const call_llm_tasks = async (prompt: string) => {
 	const withContext = PROMPTS['tasks'] + prompt;
 	const res = await call_LLM(withContext);
