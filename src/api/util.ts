@@ -1,7 +1,15 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { getLogger } from '../logger/logger.ts';
-import { redisEntryExists, redisGet, redisSet } from '../state/state.ts';
 import {
+	redisEntryExists,
+	redisGet,
+	redisGetAll,
+	redisSet,
+} from '../state/state.ts';
+import {
+	deleteExecCommon,
+	deleteJobCommon,
+	deleteTaskCommon,
 	getExec,
 	getJob,
 	getTask,
@@ -31,6 +39,7 @@ import {
 	TaskType,
 	type Transaction,
 } from '../state/types.ts';
+import { isValidUUID } from '../util/InputValidation.ts';
 
 const logger = getLogger('api_util');
 
@@ -404,4 +413,86 @@ export const newExecCommon = async ({
 		logger.error(`something went wrong in newExec: ${e}`);
 		return res?.status(500).send(undefined);
 	}
+};
+
+export const newTaskDirect = async (req: Request, res: Response) => {
+	const task_id = await GeneralInsert({ req, type: TaskType.TASK_DIRECT });
+	const llm_response = await runEntry(task_id, TaskType.TASK_DIRECT);
+
+	return res.status(200).send(llm_response);
+};
+
+export const newTask = async (req: Request, res: Response) => {
+	const task_id = await GeneralInsert({ req, type: TaskType.TASK });
+	const llm_response = await runEntry(task_id, TaskType.TASK);
+
+	return res.status(200).send(llm_response);
+};
+
+export const newJob = async (req: Request, res: Response) => {
+	const successful = await GeneralInsert({ req, type: TaskType.JOB });
+	return res.status(200).send(successful);
+};
+
+export const deleteTask = async (req: Request, res: Response) => {
+	const id = getHeader(req, 'id');
+	if (!id) res.status(400).send('invalid request');
+	const del = await deleteTaskCommon(id);
+	return res.status(200).send(`del response: ${del}`);
+};
+
+export const deleteExec = async (req: Request, res: Response) => {
+	const id = getHeader(req, 'id');
+	if (!id) res.status(400).send('invalid request');
+	const del = await deleteExecCommon(id);
+	return res.status(200).send(`del response: ${del}`);
+};
+
+export const deleteJob = async (req: Request, res: Response) => {
+	const id = getHeader(req, 'id');
+	if (!id) res.status(400).send('invalid request');
+	const del = await deleteJobCommon(id);
+	return res.status(200).send(`del response: ${del}`);
+};
+
+export const allExec = async (_: Request, res: Response) => {
+	const execs = await getExec('*');
+	return res.status(200).send(execs);
+};
+
+export const allTasks = async (_: Request, res: Response) => {
+	const tasks = await redisGetAll();
+	const out = [];
+
+	if (tasks)
+		for (const task of tasks) {
+			const state = await redisGet(task);
+			out.push(state);
+		}
+
+	return res.status(200).send(out);
+};
+
+export const validateIncomingTraffic = (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
+	let id: string = randomUUID();
+
+	logger.debug(`new incoming web request`);
+
+	try {
+		const _id = getHeader(req, 'id');
+		if (isValidUUID(_id)) id = _id;
+	} catch (e) {
+		logger.warn(`something went wrong getting id header, error: ${e}`);
+	}
+
+	logger.debug(`request: ${id}, target url: ${req.url}`);
+
+	const valid = true; // just until auth is figured out
+
+	if (valid) next();
+	else res.status(400).send();
 };

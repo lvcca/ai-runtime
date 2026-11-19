@@ -19,9 +19,9 @@ docker compose down;
 docker compose up --build --force-recreate;
 ```
 
-## Usage
+## Client Usage
 
-### javascript
+#### javascript
 ```typescript
 fetch("http://localhost:8080/exec/newExec", {
   method: "GET",
@@ -33,7 +33,7 @@ fetch("http://localhost:8080/exec/newExec", {
 }).then(res => res.text()).then(console.log).catch(console.error)
 ```
 
-### shell
+#### shell
 ```shell
 curl -X GET "http://localhost:8080/exec/newExec" \
   -H "Content-Type: application/json" \
@@ -41,7 +41,7 @@ curl -X GET "http://localhost:8080/exec/newExec" \
   -H "id: 550e8400-e29b-41d4-a716-446655440000" 
 ```
 
-### powershell
+#### powershell
 ```powershell
 $url = "http://localhost:8080/exec/newExec"
 $headers = @{
@@ -76,3 +76,8 @@ ai-runtime is released under the [MIT License](https://opensource.org/licenses/M
 ## Issues
 
 If you encounter any issues or have questions about using ai-runtime, please submit an issue on our GitHub repository.
+
+### Open Task
+ * ShellJob Workflow
+ * Runtime Tool Loading / dynamic tool chain
+ * forever tech debt 

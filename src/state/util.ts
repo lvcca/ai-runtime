@@ -88,7 +88,7 @@ export const getJob = async (id: string) => {
 	return entry;
 };
 
-export const deleteTask = async (id: string) => {
+export const deleteTaskCommon = async (id: string) => {
 	try {
 		const entry = await redisGet(id);
 
@@ -107,7 +107,7 @@ export const deleteTask = async (id: string) => {
 	}
 };
 
-export const deleteExec = async (id: string) => {
+export const deleteExecCommon = async (id: string) => {
 	try {
 		const entry = await redisGet(id);
 
@@ -122,7 +122,7 @@ export const deleteExec = async (id: string) => {
 	}
 };
 
-export const deleteJob = async (id: string) => {
+export const deleteJobCommon = async (id: string) => {
 	try {
 		const entry = await redisGet(id);
 
