@@ -1,8 +1,8 @@
 import { call_llm_toolcall, PROMPTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import {
-	RelatedTransactionsChain,
-	_Status,
+	type RelatedTransactionsChain,
+	type _Status,
 	TaskType,
 	Status,
 } from '../state/types.ts';

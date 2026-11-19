@@ -1,17 +1,33 @@
+
 {
-  "extends": "@tsconfig/node12/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "types": ["node"],
-    "rootDir": "src",
-    "outDir": "dist",
+
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+
+    "skipLibCheck": true,
+    
+    "declaration": true,
+    "declarationMap": true,
   },
-  "include": ["src/**/*", "*.md"],
-  "exclude": ["node_modules", "dist",]
+  "include": [
+    "src/**/*",
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

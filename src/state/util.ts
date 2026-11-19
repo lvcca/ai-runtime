@@ -1,6 +1,6 @@
 import { redisDelete, redisGet, redisSet } from './state.ts';
-import { Transaction, TaskType } from './types.ts';
 import { getLogger } from '../logger/logger.ts';
+import { TaskType, type Transaction } from './types.ts';
 
 const logger = getLogger('state_util');
 

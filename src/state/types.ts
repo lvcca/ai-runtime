@@ -1,4 +1,4 @@
-import { ValidatorResponse } from '../prompts/types/TaskValidator.ts';
+import type { ValidatorResponse } from '../prompts/types/TaskValidator.js';
 
 export type PromptChain = {
 	userRequestChain?: string[];

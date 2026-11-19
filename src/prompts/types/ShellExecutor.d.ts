@@ -11,4 +11,4 @@ type ShellSession = {
 	SessionStreams: StandardStreams;
 };
 
-export { StandardStreams, ShellSession };
+export type { StandardStreams, ShellSession };

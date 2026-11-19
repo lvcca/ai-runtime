@@ -5,12 +5,12 @@
   "main": "src/main.ts",
   "repository": { "type": "git", "url": "git+https://github.com/lvcca/ai-runtime.git"},
   "scripts": {
-    "build": "tsc && npm run copy-prompts",
+    "build": "tsc",
     "start": "npx tsx src/main.ts",
     "dev": "nodemon dist/main.js",
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.ts\"",
-    "pipeline": "npm run format && npm run build",
+    "pipeline": "npm run format && npm run lint && npm run build",
     "copy-prompts": "mkdir -p /app/dist/prompts && cp -r /app/src/prompts/* /app/dist/prompts/"
   },
   "keywords": [],

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { _env } from './env.ts';
 import { getLogger } from './logger/logger.ts';
 import { readFile } from 'node:fs/promises';
@@ -58,16 +59,14 @@ const load_context = async (prompts_md_file: string) => {
 	logger.info(`prompts_md_file: ${prompts_md_file}`);
 
 	try {
-		const appRootDir = '/app/dist/';
-
-		const filePath = path.join(appRootDir, prompts_md_file);
-
+		const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+		const appDistDir = path.resolve(currentDirectory, '../dist/');
+		const filePath = path.join(appDistDir, prompts_md_file);
 		const file_string = await readFile(filePath, 'utf8');
 
 		logger.info(`file_string: ${file_string}`);
 
 		PROMPTS_CONTENT += file_string;
-
 		PROMPTS_CONTENT += CONTEXT_END;
 	} catch (e) {
 		logger.error(`something went wrong in load_context ${e}`);
@@ -96,11 +95,11 @@ const KARPATHY_GUIDELINES_PROMPTS_FILE =
 const TASK_RESULT_JUNCTION_MANAGER = './prompts/junction_manager.md';
 
 // types
-const TOOL_API_TYPE_FILE = './prompts/types/ApiToolChain.ts';
-const SHELL_EXECUTOR_TYPE_FILE = './prompts/types/ShellExecutor.ts';
-const SHELL_BRANCH_ANALYSIS_TYPE_FILE = './prompts/types/ShellBranch.ts';
-const SHELL_RESULTS_TYPE_FILE = './prompts/types/ShellResults.ts';
-const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.ts';
+const TOOL_API_TYPE_FILE = './prompts/types/ApiToolChain.d.ts';
+const SHELL_EXECUTOR_TYPE_FILE = './prompts/types/ShellExecutor.d.ts';
+const SHELL_BRANCH_ANALYSIS_TYPE_FILE = './prompts/types/ShellBranch.d.ts';
+const SHELL_RESULTS_TYPE_FILE = './prompts/types/ShellResults.d.ts';
+const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.d.ts';
 
 // schemas
 export const FILE_SYSTEM_SCHEMA = './prompts/types/FileSystemSchema.ts';
