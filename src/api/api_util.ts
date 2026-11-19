@@ -7,6 +7,7 @@ import {
 	getTask,
 	setExec,
 	setJob,
+	setShellJob,
 	setTask,
 } from '../state/util.ts';
 import { randomUUID } from 'node:crypto';
@@ -46,6 +47,7 @@ export const GeneralInsert = async ({
 	//
 	_id,
 	_task,
+	verbose = false,
 }: {
 	//
 	req?: Request;
@@ -53,8 +55,9 @@ export const GeneralInsert = async ({
 	//
 	_id?: string;
 	_task?: string;
+	verbose?: false;
 }) => {
-	logger.debug(`in task insert`);
+	if (verbose) logger.debug(`in task insert`);
 
 	let successful: boolean = false;
 
@@ -63,15 +66,15 @@ export const GeneralInsert = async ({
 
 	// local caller
 	if (_id && _task) {
-		logger.debug(`originated from: local internal call`);
+		if (verbose) logger.debug(`originated from: local internal call`);
 		//
 		id = _id;
 		task = _task;
 	}
 
-	// remote caller
+	// called from api
 	if (req && type) {
-		logger.debug(`originated from: http call`);
+		if (verbose) logger.debug(`originated from: http call`);
 		//
 		id = getHeader(req, 'id') ?? randomUUID();
 		task = getHeader(req, 'task');
@@ -79,7 +82,7 @@ export const GeneralInsert = async ({
 
 	const exists = await redisEntryExists(id);
 
-	logger.debug(`exists: ${exists}`);
+	if (verbose) logger.debug(`exists: ${exists}`);
 
 	// if exists get entry
 	let currEntry: Transaction | undefined;
@@ -109,20 +112,15 @@ export const GeneralInsert = async ({
 		switch (currEntry?.type) {
 			case TaskType.EXECUTION:
 				if (related && !related?.exec) related.exec = [];
-
 				related?.exec?.push(id);
 				break;
-
 			case TaskType.JOB:
 				if (related && !related.job) related.job = [];
-
 				related?.job?.push(id);
 				break;
-
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
 				if (related && !related.task) related.task = [];
-
 				related?.task?.push(id);
 				break;
 		}
@@ -156,11 +154,17 @@ export const GeneralInsert = async ({
 		};
 	}
 
-	logger.info(`full saved exists transaction: ${JSON.stringify(transaction)}`);
+	if (verbose)
+		logger.debug(
+			`full saved exists transaction: ${JSON.stringify(transaction)}`,
+		);
 
-	logger.info(`Incoming newTask: ${id}, type: ${type}`);
+	if (verbose) logger.debug(`Incoming newTask: ${id}, type: ${type}`);
 
 	switch (type) {
+		case TaskType.SHELL_JOB:
+			successful = await setShellJob(transaction);
+			break;
 		case TaskType.EXECUTION:
 			successful = await setExec(transaction);
 			break;
@@ -173,7 +177,7 @@ export const GeneralInsert = async ({
 			break;
 	}
 
-	logger.info(`successful: ${successful}`);
+	if (verbose) logger.info(`successful: ${successful}`);
 
 	return id;
 };

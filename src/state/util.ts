@@ -7,7 +7,7 @@ const logger = getLogger('state_util');
 export const setShellJob = async (tx: Transaction) => {
 	if (tx.type === undefined || tx.type !== TaskType.SHELL_JOB)
 		throw new Error(
-			`task type mismatch: requested: ${tx.type}, expected ${TaskType.TASK} || ${TaskType.TASK_DIRECT}`,
+			`task type mismatch: requested: ${tx.type}, expected ${TaskType.SHELL_JOB}`,
 		);
 
 	const successful = await redisSet(tx);
