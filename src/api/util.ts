@@ -1,11 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { getLogger } from '../logger/logger.ts';
-import {
-	redisEntryExists,
-	redisGet,
-	redisGetAll,
-	redisSet,
-} from '../state/state.ts';
+import { redisEntryExists, redisGet, redisSet } from '../state/state.ts';
 import {
 	deleteExecCommon,
 	deleteJobCommon,
@@ -394,7 +389,7 @@ export const newExecCommon = async ({
 			const res = await getExecManagerNextAction(exec_id, executionResults);
 			// if branching?
 			// remove return
-			return res; //<-- for lint #TODO fix me
+			return res; //<-- for lint #TODO fix me with feature implementation exec branching
 		}
 
 		const response = {
@@ -460,17 +455,14 @@ export const allExec = async (_: Request, res: Response) => {
 	return res.status(200).send(execs);
 };
 
+export const allJobs = async (_: Request, res: Response) => {
+	const execs = await getJob('*');
+	return res.status(200).send(execs);
+};
+
 export const allTasks = async (_: Request, res: Response) => {
-	const tasks = await redisGetAll();
-	const out = [];
-
-	if (tasks)
-		for (const task of tasks) {
-			const state = await redisGet(task);
-			out.push(state);
-		}
-
-	return res.status(200).send(out);
+	const tasks = await getTask('*');
+	return res.status(200).send(tasks);
 };
 
 export const validateIncomingTraffic = (
