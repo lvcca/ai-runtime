@@ -1,68 +1,159 @@
 import { getLogger } from '../logger/logger.ts';
+import { Tool } from '../prompts/types/ApiToolChain.ts';
 
 const logger = getLogger('ToolRegistry');
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type _func = (...args: any[]) => Promise<any>;
 
-export type ToolSchema = {
-	name: string, path: string
-}
-export type ToolEntry = {
+export type RegisteredToolEntry = {
 	readonly name: string;
 	readonly func: _func;
-	readonly schema: ToolSchema;
+	readonly schema: Tool;
 };
 
+/**
+ * Singleton tool repository class
+ * @class
+ */
 export class ToolRegistry {
-	public readonly _tools: Map<string, ToolEntry> = new Map<string, ToolEntry>();
+	private readonly _tools: Map<string, RegisteredToolEntry> = new Map<
+		string,
+		RegisteredToolEntry
+	>();
 
-	public register({name, func, toolSchema}:{name: string, func: _func, toolSchema: ToolSchema}) 
-	{
-		if (this._tools.has(name))
+	/**
+	 * Registers a tool in the registry.
+	 *
+	 * @example
+	 * const registry = new ToolRegistry();
+	 *
+	 * registry.register({
+	 *     name: 'hello_world',
+	 *     func: () => {
+	 *         return 'henlo world!';
+	 *     },
+	 *     toolSchema: {
+	 *         name: 'hello_world',
+	 *         description: 'Returns a hello world string.',
+	 *         parameters: [],
+	 *         return: {
+	 *             name: 'static string',
+	 *             type: 'string',
+	 *             value: 'value of hello world.',
+	 *             required: true,
+	 *         },
+	 *     } as Tool,
+	 * });
+	 *
+	 * @param name 			- tool name
+	 * @param func 			- tool definition, machine's function def
+	 * @param toolSchema 	- Tool schema, machine's type def
+	 * @param sanityCheck 	- run a sanity test post registration
+	 * @param overwrite 	- overwrite existing entries with the same name
+	 */
+
+	public register({
+		name,
+		func,
+		toolSchema,
+		sanityCheck = false,
+		overwrite = false,
+	}: {
+		name: string;
+		func: _func;
+		toolSchema: Tool;
+		sanityCheck?: boolean;
+		overwrite?: boolean;
+	}) {
+		if (this._tools.has(name) && !overwrite)
 			throw new Error(`Tool '${name}' is already registered`);
 
 		try {
 			logger.debug(
-				`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(toolSchema,null,2)}`,
+				`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(toolSchema, null, 2)}`,
 			);
 
-			const tool: ToolEntry = {
+			const tool: RegisteredToolEntry = {
 				name,
 				func,
 				schema: toolSchema,
 			};
 
 			this._tools.set(name, tool);
-			const sanityCheck = this._tools.get(name);
 
-			logger.debug(`tool sanity check func: ${sanityCheck?.func}`);
+			if (sanityCheck) {
+				const _sanityCheck = this._tools.get(name);
+				logger.debug(`tool sanity check func: ${_sanityCheck?.func}`);
+			}
 		} catch (e) {
 			logger.error(`something went wrong in ToolRegistry register: ${e}`);
 		}
 	}
 
-	public getToolEntry(name: string): ToolEntry | undefined {
-		return this._tools.get(name);
+	/**
+	 * Get tool collection, safe copy
+	 * not intended for inserts or mutations, just for auditing or printing
+	 * @returns {<string, RegisteredToolEntry>} Registry's _tools
+	 */
+	public getAllTools(): ReadonlyMap<string, RegisteredToolEntry> {
+		return this._tools;
 	}
 
-	public listTools(): ToolEntry[] {
-		const allTools: ToolEntry[] = [];
+	/**
+	 * 	basic tool get
+	 * 	@returns {RegisteredToolEntry}
+	 */
+	public getRegisteredToolEntry(name: string): RegisteredToolEntry {
+		const _entry = this._tools.get(name);
+		if (_entry) return _entry;
+		else
+			throw new Error(
+				`[*] TOOL NOT FOUND! Tool with name ${name} not found in registry...`,
+			);
+	}
 
-		for (const key of this._tools.keys()) {
-			const tool = this._tools.get(key);
-			if (tool) allTools.push(tool);
+	/**
+	 * 	tool get all
+	 * 	@returns {RegisteredToolEntry[]}
+	 */
+	public listRegisteredTools(): RegisteredToolEntry[] {
+		return Array.from(structuredClone(this._tools).values());
+	}
+
+	/**
+	 * 	list schemas available
+	 * 	@returns {Map<string, string>} map of tool schema name to tool schema
+	 */
+	public listSchemas(): Map<string, string> {
+		// SchemaName<functionName, Tool>
+		const schemas = new Map<string, string>();
+
+		for (const tool of this._tools.values()) {
+			if (tool.schema) {
+				if (!schemas.get(tool.schema.name)) {
+					schemas.set(tool.schema.name, JSON.stringify(tool.schema));
+				}
+			}
 		}
-
-		return allTools;
-	}
-
-	public listSchemas() {
-		const schemas = new Map<string, ToolSchema>();
-
-		for (const tool of this._tools.values()) 
-			if (tool.schema) if (!schemas.get(tool.schema.name)) schemas.set(tool.schema.name, tool.schema);
 
 		return schemas;
 	}
 }
+
+export const toolRegistry = new ToolRegistry();
+
+// future stuffs
+abstract class ToolBaseClass {
+	constructor(
+		protected readonly name: string,
+		protected readonly registry: ToolRegistry,
+	) {}
+	//
+	abstract SetToolSchema(Tools: Map<string, Tool>): Promise<void>;
+	abstract GetToolSchema(): Promise<Map<string, Tool>>;
+	//
+	//
+	public async registerTools(): Promise<void> {}
+}
+//

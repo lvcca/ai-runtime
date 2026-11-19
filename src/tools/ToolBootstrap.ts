@@ -1,5 +1,4 @@
 import { RegisterTools } from './FileSystem.ts';
-import { ToolRegistry } from './ToolRegistry.ts';
+import { toolRegistry } from './ToolRegistry.ts';
 
-export const registry = new ToolRegistry();
-RegisterTools(registry);
+RegisterTools(toolRegistry);
