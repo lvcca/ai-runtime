@@ -6,7 +6,6 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getLogger } from '../logger/logger.ts';
 import { ToolRegistry } from './ToolRegistry.ts';
-import { FILE_SYSTEM_SCHEMA } from '../llm.ts';
 import { _FileSystemSchema } from '../prompts/schemas/FileSystemSchema.ts';
 
 const logger = getLogger('FileSystem');

@@ -1,5 +1,5 @@
 import { getLogger } from '../logger/logger.ts';
-import { Tool } from '../prompts/types/ApiToolChain.ts';
+import type { Tool } from '../prompts/types/ApiToolChain.js';
 
 const logger = getLogger('ToolRegistry');
 
@@ -118,7 +118,7 @@ export class ToolRegistry {
 	 * 	@returns {RegisteredToolEntry[]}
 	 */
 	public listRegisteredTools(): RegisteredToolEntry[] {
-		return Array.from(structuredClone(this._tools).values());
+		return Array.from(this._tools.values());
 	}
 
 	/**
@@ -144,16 +144,19 @@ export class ToolRegistry {
 export const toolRegistry = new ToolRegistry();
 
 // future stuffs
-abstract class ToolBaseClass {
-	constructor(
-		protected readonly name: string,
-		protected readonly registry: ToolRegistry,
-	) {}
-	//
-	abstract SetToolSchema(Tools: Map<string, Tool>): Promise<void>;
-	abstract GetToolSchema(): Promise<Map<string, Tool>>;
-	//
-	//
-	public async registerTools(): Promise<void> {}
-}
+// abstract class ToolBaseClass {
+// 	protected readonly name: string;
+// 	protected readonly registry: ToolRegistry;
+
+// 	constructor(name: string, registry: ToolRegistry) {
+// 		this.name = name;
+// 		this.registry = registry;
+// 	}
+// 	//
+// 	abstract SetToolSchema(Tools: Map<string, Tool>): Promise<void>;
+// 	abstract GetToolSchema(): Promise<Map<string, Tool>>;
+// 	//
+// 	//
+// 	public async registerTools(): Promise<void> {}
+// }
 //

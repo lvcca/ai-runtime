@@ -6,19 +6,19 @@ import {
 	PROMPTS,
 } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import {
+import type {
 	Parameter,
 	Tool,
 	ToolCallPayload,
-} from '../prompts/types/ApiToolChain.ts';
-import { StandardStreams } from '../prompts/types/ShellExecutor.ts';
+} from '../prompts/types/ApiToolChain.js';
+import type { StandardStreams } from '../prompts/types/ShellExecutor.js';
 import { redisGet } from '../state/state.ts';
 import {
-	PromptChain,
-	RelatedTransactionsChain,
-	_Status,
+	type PromptChain,
+	type RelatedTransactionsChain,
+	type _Status,
 	TaskType,
-	Transaction,
+	type Transaction,
 	Status,
 } from '../state/types.ts';
 import {
@@ -31,8 +31,8 @@ import {
 	setTask,
 } from '../state/util.ts';
 import {
-	_func,
-	RegisteredToolEntry,
+	type _func,
+	type RegisteredToolEntry,
 	toolRegistry,
 } from '../tools/ToolRegistry.ts';
 import crypto from 'node:crypto';

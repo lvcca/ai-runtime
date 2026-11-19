@@ -1,8 +1,12 @@
 import { call_llm_chat, call_llm_tasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
-import { _Status, Status, TaskType } from '../state/types.ts';
+import { type _Status, Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
-import { GetPlan, PlannerWorkerResultType, RevisePlan } from './Planner.ts';
+import {
+	GetPlan,
+	type PlannerWorkerResultType,
+	RevisePlan,
+} from './Planner.ts';
 import { appendToTransactionLog } from './util.ts';
 
 const logger = getLogger('TaskWorker');
