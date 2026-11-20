@@ -65,8 +65,8 @@ export const generalInsert = async ({
 
 	let successful: boolean = false;
 
-	let id = '';
-	let task = '';
+	let id: string | undefined;
+	let task: string | undefined;
 
 	// local caller
 	if (_id && _task) {
@@ -84,24 +84,26 @@ export const generalInsert = async ({
 		task = getHeader(req, 'task');
 	}
 
-	assert(id !== '' && task !== '', 'Malformed call to GeneralInsert...');
-
+	assert(id !== undefined && task !== undefined, 'malformed call to generalInsert...');
+	
 	const exists = await redisEntryExists(id);
 
 	if (verbose) logger.debug(`exists: ${exists}`);
 
-	// if exists get entry
-	let currEntry: Transaction | undefined;
-	if (exists) currEntry = await redisGet<Transaction>(id);
+	// if exists get existing entry
+	let existingEntry: Transaction | undefined;
+	if (exists) existingEntry = await redisGet<Transaction>(id);
 
 	// redis save obj
 	let _tx: Transaction | undefined;
 
 	// if exists create new task with link to existing task
 	if (exists) {
+		assert(!!existingEntry, 'existing entry cannot be undefined if it exists..')
+
 		const newId = randomUUID();
 
-		const prompt: PromptChain = currEntry?.prompt ?? {};
+		const prompt: PromptChain = existingEntry?.prompt ?? {};
 
 		const existingResponse = prompt.llmResponseChain ?? [];
 		const userRequest = prompt.userRequestChain ?? [];
@@ -113,26 +115,28 @@ export const generalInsert = async ({
 			llmResponseChain: existingResponse,
 		};
 
-		let related: RelatedTransactionsChain = structuredClone(currEntry?.related);
+		let relatedTransactions: RelatedTransactionsChain = structuredClone(existingEntry?.related);
 
-		switch (currEntry?.type) {
+		switch (existingEntry?.type) {
 			case TaskType.SHELL_JOB:
-				if (related && !related?.shellJob) related.shellJob = [];
-				related?.shellJob?.push(id);
+				if (relatedTransactions && !relatedTransactions?.shellJob) relatedTransactions.shellJob = [];
+				relatedTransactions?.shellJob?.push(id);
 				break;
 			case TaskType.EXECUTION:
-				if (related && !related?.exec) related.exec = [];
-				related?.exec?.push(id);
+				if (relatedTransactions && !relatedTransactions?.exec) relatedTransactions.exec = [];
+				relatedTransactions?.exec?.push(id);
 				break;
 			case TaskType.JOB:
-				if (related && !related.job) related.job = [];
-				related?.job?.push(id);
+				if (relatedTransactions && !relatedTransactions.job) relatedTransactions.job = [];
+				relatedTransactions?.job?.push(id);
 				break;
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
-				if (related && !related.task) related.task = [];
-				related?.task?.push(id);
+				if (relatedTransactions && !relatedTransactions.task) relatedTransactions.task = [];
+				relatedTransactions?.task?.push(id);
 				break;
+			default:
+				if (verbose) logger.warn(`no case for type ${existingEntry?.type}`)
 		}
 
 		_tx = {
@@ -142,12 +146,13 @@ export const generalInsert = async ({
 			},
 			type,
 			prompt: newPrompt,
-			related,
+			related: relatedTransactions,
 		};
 
 		// for return statement to be accurate
 		id = newId;
 		assert(id === _tx.id, 'sanity check failed id !== _tx.id');
+
 	} else {
 		// create new transaction
 		_tx = {
@@ -225,14 +230,14 @@ export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 	return out;
 };
 
-export const validate = async (id?: string) => {
-	logger.info(`validating transaction: ${id}`);
+export const ExecValidator = async ({id, verbose=false}:{id?: string, verbose?: boolean}) => {
+	if (verbose) logger.debug(`validating transaction: ${id}`);
 
-	if (!id) throw new Error(`validate requires a valid id... id: ${id}`);
+	assert(id, `validate requires a valid id... id: ${id}`)
 	const entry = await redisGet<Transaction>(id);
-	if (!entry) throw new Error(`could not find valid entry: id: ${id}`);
+	assert(entry, `could not find valid entry: id: ${id}`)
 
-	logger.info(`found entry: ${JSON.stringify(entry)}`);
+	if (verbose) logger.debug(`found entry: ${JSON.stringify(entry)}`);
 
 	const { result, prompt, related } = entry;
 
@@ -240,7 +245,7 @@ export const validate = async (id?: string) => {
 
 	let _result: string;
 
-	logger.info(`res: ${result}, prompt: ${JSON.stringify(prompt)}`);
+	if (verbose) logger.debug(`res: ${result}, prompt: ${JSON.stringify(prompt)}`);
 
 	_result = await call_llm_task_validator(`
 You are an Execution agent manager.
@@ -279,7 +284,7 @@ Output FORMAT:
 </LLM_RESPONSE>
 	`);
 
-	logger.debug(`Task Validator Result: ${_result}`);
+	if (verbose) logger.debug(`Task Validator Result: ${_result}`);
 
 	const responseBlock = await extractResponseBlock(_result);
 	if (!responseBlock)
@@ -287,14 +292,19 @@ Output FORMAT:
 
 	const validatorResponse = parseJsonSafe<ValidatorResponse>(responseBlock);
 
-	logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
+	if (verbose) logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
 
-	await redisSet({ id: id, validatorResponse: validatorResponse });
+	const incomingEntry: Transaction = {
+		id, 
+		validatorResponse
+	}
+
+	await redisSet<Transaction>({incomingEntry});
 
 	return validatorResponse;
 };
 
-export const runEntry = async (id: string, type: TaskType) => {
+export const run = async ({id, type}:{id: string, type: TaskType}) => {
 	let result: string = 'FAILED';
 
 	const currentTx = await redisGet<Transaction>(id);
@@ -302,8 +312,8 @@ export const runEntry = async (id: string, type: TaskType) => {
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
 	const userRequestChain = currentTx?.prompt?.userRequestChain;
 
-	if (!userRequestChain || userRequestChain.length < 1)
-		throw new Error(`no user req string found for task ${id}`);
+	assert(!!userRequestChain, 'user request chain unefined!')
+	assert(userRequestChain.length > 0, 'user request chain is empty!')
 
 	const latestRequest = userRequestChain[0];
 
@@ -357,12 +367,14 @@ export const newExecCommon = async ({
 	res,
 	_id,
 	_task,
+	verbose=false
 }: {
 	req?: Request;
 	res?: Response;
 	//
 	_id?: string;
 	_task?: string;
+	verbose?: boolean;
 }) => {
 	try {
 		//
@@ -374,35 +386,37 @@ export const newExecCommon = async ({
 			_task,
 		});
 
-		const llm_response = await runEntry(exec_id, TaskType.EXECUTION);
-		const validatorResponse = await validate(exec_id);
-		const currObj = await getExec(exec_id);
+		const llm_response = await run({
+			id: exec_id, 
+			type: TaskType.EXECUTION
+		});
+
+		const validatorResponse = await ExecValidator({id: exec_id});
 
 		//
 		const summary = await SummarizeLlmTransaction(exec_id);
 		//
 
-		const executionResults = await ManageExecutionResults(exec_id);
+		const execManagementResults = await ManageExecutionResults(exec_id);
 
 		if (
-			executionResults.next_action &&
-			executionResults?.transaction_status !== 'success'
+			execManagementResults.next_action &&
+			execManagementResults?.transaction_status !== 'success'
 		) {
-			const res = await getExecManagerNextAction(exec_id, executionResults);
+			const res = await getExecManagerNextAction(exec_id, execManagementResults);
 			// if branching?
 			// remove return
 			return res; //<-- for lint #TODO fix me with feature implementation exec branching
 		}
 
 		const response = {
-			llm_response,
-			validatorResponse,
-			currObj,
-			summary,
-			ManagerResponse: executionResults,
+			llm_response: llm_response,
+			validatorResponse: validatorResponse,
+			summary: summary,
+			ManagerResponse: execManagementResults,
 		};
 
-		logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
+		if (verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
 
 		// else
 		return res?.status(200).send(response);
@@ -414,15 +428,21 @@ export const newExecCommon = async ({
 
 export const newTaskDirect = async (req: Request, res: Response) => {
 	const task_id = await generalInsert({ req, type: TaskType.TASK_DIRECT });
-	const llm_response = await runEntry(task_id, TaskType.TASK_DIRECT);
+	const llm_response = await run({
+		id: task_id, 
+		type: TaskType.TASK_DIRECT
+	});
 
 	return res.status(200).send(llm_response);
 };
 
 export const newTask = async (req: Request, res: Response) => {
 	const task_id = await generalInsert({ req, type: TaskType.TASK });
-	const llm_response = await runEntry(task_id, TaskType.TASK);
-
+	const llm_response = await run({
+		id: task_id, 
+		type: TaskType.TASK
+	});
+	
 	return res.status(200).send(llm_response);
 };
 

@@ -7,7 +7,7 @@ const logger = getLogger('state_util');
 export const setShellJob = async (tx: Transaction, verbose?: boolean) => {
 	assert(tx.type === TaskType.SHELL_JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.SHELL_JOB}`)
 
-	const successful = await redisSet(tx);
+	const successful = await redisSet<Transaction>({incomingEntry: tx});
 	if (verbose) logger.debug(`setShellJob: successful ${successful}`);
 	return successful;
 };
@@ -15,7 +15,7 @@ export const setShellJob = async (tx: Transaction, verbose?: boolean) => {
 export const setTask = async (tx: Transaction) => {
 	assert(tx.type === TaskType.TASK || tx.type === TaskType.TASK_DIRECT, `task type mismatch: requested: ${tx.type}, expected ${TaskType.TASK} || ${TaskType.TASK_DIRECT}`)
 
-	const successful = await redisSet(tx);
+	const successful = await redisSet<Transaction>({incomingEntry: tx});
 	logger.info(`setTask: successful ${successful}`);
 	return successful;
 };
@@ -23,14 +23,14 @@ export const setTask = async (tx: Transaction) => {
 export const setExec = async (tx: Transaction & { exec?: string }) => {
 	assert(tx.type === TaskType.EXECUTION, `task type mismatch: requested: ${tx.type}, expected ${TaskType.EXECUTION}`)
 
-	const successful = await redisSet(tx);
+	const successful = await redisSet<Transaction>({incomingEntry: tx});
 	return successful;
 };
 
 export const setJob = async (tx: Transaction & { job?: string }) => {
 	assert(tx.type === TaskType.JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.JOB}`)
 	
-	const successful = await redisSet(tx);
+	const successful = await redisSet<Transaction>({incomingEntry: tx});
 	return successful;
 };
 
