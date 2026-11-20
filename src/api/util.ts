@@ -147,9 +147,7 @@ export const generalInsert = async ({
 
 		// for return statement to be accurate
 		id = newId;
-
-		assert(id === newId, 'sanity check failed id !== newId');
-
+		assert(id === _tx.id, 'sanity check failed id !== _tx.id');
 	} else {
 		// create new transaction
 		_tx = {
@@ -166,9 +164,7 @@ export const generalInsert = async ({
 	}
 
 	if (verbose)
-		logger.debug(
-			`full saved exists transaction: ${JSON.stringify(_tx)}`,
-		);
+		logger.debug(`full saved exists transaction: ${JSON.stringify(_tx)}`);
 
 	if (verbose) logger.debug(`Incoming newTask: ${id}, type: ${type}`);
 
@@ -289,8 +285,7 @@ Output FORMAT:
 	if (!responseBlock)
 		throw new Error(`invalid response from validator: ${responseBlock}`);
 
-	const validatorResponse =
-		parseJsonSafe<ValidatorResponse>(responseBlock);
+	const validatorResponse = parseJsonSafe<ValidatorResponse>(responseBlock);
 
 	logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
 
@@ -305,12 +300,12 @@ export const runEntry = async (id: string, type: TaskType) => {
 	const currentTx = await redisGet<Transaction>(id);
 
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
-	const user_req = currentTx?.prompt?.userRequestChain;
+	const userRequestChain = currentTx?.prompt?.userRequestChain;
 
-	if (!user_req || user_req.length < 1)
+	if (!userRequestChain || userRequestChain.length < 1)
 		throw new Error(`no user req string found for task ${id}`);
 
-	const latestRequest = user_req[0];
+	const latestRequest = userRequestChain[0];
 
 	switch (type) {
 		case TaskType.TASK_DIRECT:
@@ -325,7 +320,7 @@ export const runEntry = async (id: string, type: TaskType) => {
 	}
 
 	logger.info(
-		`start result: type: ${type}, task: ${user_req}, result: ${result}`,
+		`start result: type: ${type}, task: ${userRequestChain}, result: ${result}`,
 	);
 
 	return result;
@@ -479,7 +474,7 @@ export const validateIncomingTraffic = (
 ) => {
 	let id: string = randomUUID();
 
-	logger.debug(`new incoming web request`);
+	logger.debug(`new incoming web request from ${req.hostname}:(${req.ip})`);
 
 	try {
 		const _id = getHeader(req, 'id');

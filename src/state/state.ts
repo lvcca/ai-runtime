@@ -5,12 +5,11 @@ import {
 } from 'redis';
 import { getLogger } from '../logger/logger.ts';
 import type { Transaction } from './types.ts';
+import { _env } from '../env.ts';
 
 const logger = getLogger('state');
 
-const client: RedisClientType = createClient({
-	url: 'redis://redis:6379',
-});
+const client: RedisClientType = createClient({ url: _env.redisURL });
 
 let connection: RedisClientType<RedisDefaultModules, {}, {}, 3, {}> | undefined;
 
@@ -89,7 +88,7 @@ export const redisGetAll = async () => {
 	}
 };
 
-export const redisGet = async <T> (id: string) => {
+export const redisGet = async <T>(id: string) => {
 	try {
 		const _connection = await getConnection();
 		const entry = await _connection.get(id);

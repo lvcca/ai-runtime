@@ -5,7 +5,7 @@ import { getLogger } from './logger/logger.ts';
 import './tools/ToolBootstrap.ts';
 import { hostname } from 'node:os';
 import { toolRegistry } from './tools/ToolRegistry.ts';
-import '@lvcca/assert'
+import '@lvcca/ts-assert';
 
 const logger = getLogger('main');
 
