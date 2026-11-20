@@ -42,11 +42,13 @@ export const RevisePlan = async ({
 	task,
 	plan,
 	depth = 5,
+	verbose=false
 }: {
 	task_id: string;
 	task: string;
 	plan: string;
 	depth?: number;
+	verbose?: boolean
 }): Promise<PlannerWorkerResultType> => {
 	// recursion exit
 	if (depth == 0) {
@@ -64,8 +66,10 @@ export const RevisePlan = async ({
 		} as PlannerWorkerResultType;
 	}
 
-	logger.info(`current task: ${task}`);
-	logger.info(`current plan: ${plan}`);
+	if (verbose) {
+		logger.info(`current task: ${task}`);
+		logger.info(`current plan: ${plan}`);
+	}
 
 	await appendToTransactionLog({
 		_id: task_id,
@@ -107,13 +111,13 @@ ${JSON.stringify({
 })}
 `;
 
-	logger.info(`prompt: ${prompt}`);
+	if (verbose) logger.info(`prompt: ${prompt}`);
 
 	const raw = await call_llm_tasks(prompt);
 
-	if (!raw) throw new Error('no response from llm...');
+	assert(!!raw, 'no response from llm...')
 
-	logger.info(`response: ${raw}`);
+	if (verbose) logger.info(`raw response: ${raw}`);
 
 	const result = parseJsonSafe<PlannerWorkerResultType>(raw);
 
@@ -126,7 +130,6 @@ ${JSON.stringify({
 		});
 
 	if (result.approved) return result;
-	// if not approved
 	else {
 		const new_plan = result['steps'].join() ?? plan;
 		const plan_feedback = JSON.stringify(result['plan_feedback']);
