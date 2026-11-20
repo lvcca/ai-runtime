@@ -82,3 +82,4 @@ If you encounter any issues or have questions about using ai-runtime, please sub
  * Runtime Tool Loading / dynamic tool chain
  * forever tech debt, @TODO
  * ux after flows completed
+ * collective / swarm mode 

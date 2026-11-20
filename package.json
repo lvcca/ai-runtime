@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/main.ts",
-  "repository": { "type": "git", "url": "git+https://github.com/lvcca/ai-runtime.git"},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lvcca/ai-runtime.git"
+  },
   "scripts": {
     "build": "tsc && npm run copy-prompts",
     "start": "npx tsx src/main.ts",
@@ -36,6 +39,6 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",
     "typescript-eslint": "^8.61.0",
-    "@lvcca/assert": "1.0.0"
+    "@lvcca/ts-assert": "1.1.3"
   }
 }

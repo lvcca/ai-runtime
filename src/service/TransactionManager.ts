@@ -18,10 +18,7 @@ export type TransactionManagerResponse = {
 		| 'non_recoverable'
 		| 'environment_issue'
 		| 'unknown';
-	next_action?: {
-		type: 'retry' | 'terminate' | 'noop';
-		prompt: string;
-	};
+	next_action?: { type: 'retry' | 'terminate' | 'noop'; prompt: string };
 	confidence?: number;
 };
 
@@ -80,8 +77,7 @@ ONLY ACCEPTABLE OUTPUT FORMAT:
 };
 `);
 
-	final_results =
-		parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
+	final_results = parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
 
 	logger.debug(
 		`ManageTransaction final_results: ${JSON.stringify(final_results)}`,

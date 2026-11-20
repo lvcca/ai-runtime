@@ -358,10 +358,7 @@ const SafeExecute = async (
 
 		await setJob({
 			id: key,
-			status: {
-				status: Status.FAILED,
-				message: msg,
-			},
+			status: { status: Status.FAILED, message: msg },
 		});
 
 		logger.error(msg);
@@ -390,10 +387,7 @@ const AddJob = async (id: string, job_id: string) => {
 		case TaskType.EXECUTION:
 			saved = await setExec({
 				...entry,
-				related: {
-					...related,
-					job: jobs,
-				},
+				related: { ...related, job: jobs },
 			});
 			break;
 		default:
@@ -436,12 +430,8 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				await setJob({
 					id: TID,
 					type: TaskType.JOB,
-					status: {
-						status: Status.QUEUED,
-					},
-					related: {
-						exec: [exec_id],
-					},
+					status: { status: Status.QUEUED },
+					related: { exec: [exec_id] },
 					job: JSON.stringify(step),
 				});
 
@@ -488,9 +478,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				await setJob({
 					id: TID,
 					type: TaskType.JOB,
-					status: {
-						status: Status.COMPLETED,
-					},
+					status: { status: Status.COMPLETED },
 					job: JSON.stringify(step),
 					result: final_results,
 				});
@@ -502,12 +490,8 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				await setJob({
 					id: TID,
 					type: TaskType.JOB,
-					status: {
-						status: Status.FAILED,
-					},
-					related: {
-						exec: [exec_id],
-					},
+					status: { status: Status.FAILED },
+					related: { exec: [exec_id] },
 					job: JSON.stringify(step),
 					result: final_results,
 				});
@@ -546,10 +530,7 @@ export const ToolExec = async ({
 
 	await setExec({
 		id: toolExecId,
-		status: {
-			status: Status.RUNNING,
-			message: 'Tool Exec',
-		},
+		status: { status: Status.RUNNING, message: 'Tool Exec' },
 		type: TaskType.EXECUTION,
 	});
 
@@ -589,9 +570,7 @@ export const ToolExec = async ({
 		await setExec({
 			id: toolExecId,
 			result,
-			status: {
-				status: Status.COMPLETED,
-			},
+			status: { status: Status.COMPLETED },
 		});
 
 		await appendToTransactionLog({
@@ -604,10 +583,7 @@ export const ToolExec = async ({
 
 		await setExec({
 			id: toolExecId,
-			status: {
-				status: Status.FAILED,
-				message: `${JSON.stringify(e)}`,
-			},
+			status: { status: Status.FAILED, message: `${JSON.stringify(e)}` },
 		});
 	}
 	return result;
