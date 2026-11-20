@@ -771,7 +771,7 @@ export type SummaryType = {
  * @returns
  */
 export const SummarizeLlmTransaction = async (id: string) => {
-	const currObj = await redisGet(id);
+	const currObj = await redisGet<Transaction>(id);
 	const _obj = JSON.stringify(currObj);
 
 	const summarizedTask = await call_llm_task_summarizer(`

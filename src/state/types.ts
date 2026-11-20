@@ -35,6 +35,7 @@ export type RelatedTransactionsChain =
 			job?: string[];
 			task?: string[];
 			exec?: string[];
+			shellJob?: string[];
 	  }
 	| undefined;
 

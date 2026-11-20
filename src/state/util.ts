@@ -4,14 +4,14 @@ import { TaskType, type Transaction } from './types.ts';
 
 const logger = getLogger('state_util');
 
-export const setShellJob = async (tx: Transaction) => {
+export const setShellJob = async (tx: Transaction, verbose?: boolean) => {
 	if (tx.type === undefined || tx.type !== TaskType.SHELL_JOB)
 		throw new Error(
 			`task type mismatch: requested: ${tx.type}, expected ${TaskType.SHELL_JOB}`,
 		);
 
 	const successful = await redisSet(tx);
-	logger.info(`setShellJob: successful ${successful}`);
+	if (verbose) logger.debug(`setShellJob: successful ${successful}`);
 	return successful;
 };
 
@@ -49,7 +49,7 @@ export const setJob = async (tx: Transaction & { job?: string }) => {
 };
 
 export const getShellJob = async (id: string) => {
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 	if (entry && entry?.type !== TaskType.SHELL_JOB)
 		throw new Error(
 			`task type mismatch: requested ${TaskType.SHELL_JOB} received: ${entry?.type}`,
@@ -58,7 +58,7 @@ export const getShellJob = async (id: string) => {
 };
 
 export const getTask = async (id: string) => {
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 	if (
 		entry &&
 		entry?.type !== TaskType.TASK &&
@@ -71,7 +71,7 @@ export const getTask = async (id: string) => {
 };
 
 export const getExec = async (id: string) => {
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 	if (entry && entry?.type !== TaskType.EXECUTION)
 		throw new Error(
 			`task type mismatch: requested ${TaskType.EXECUTION} received: ${entry?.type}`,
@@ -80,7 +80,7 @@ export const getExec = async (id: string) => {
 };
 
 export const getJob = async (id: string) => {
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 	if (entry && entry?.type !== TaskType.JOB)
 		throw new Error(
 			`task type mismatch: requested ${TaskType.JOB} received: ${entry?.type}`,
@@ -90,7 +90,7 @@ export const getJob = async (id: string) => {
 
 export const deleteTaskCommon = async (id: string) => {
 	try {
-		const entry = await redisGet(id);
+		const entry = await redisGet<Transaction>(id);
 
 		switch (entry?.type) {
 			case TaskType.TASK:
@@ -109,7 +109,7 @@ export const deleteTaskCommon = async (id: string) => {
 
 export const deleteExecCommon = async (id: string) => {
 	try {
-		const entry = await redisGet(id);
+		const entry = await redisGet<Transaction>(id);
 
 		if (!entry || entry?.type !== TaskType.EXECUTION)
 			throw new Error(
@@ -124,7 +124,7 @@ export const deleteExecCommon = async (id: string) => {
 
 export const deleteJobCommon = async (id: string) => {
 	try {
-		const entry = await redisGet(id);
+		const entry = await redisGet<Transaction>(id);
 
 		if (!entry || entry?.type !== TaskType.JOB)
 			throw new Error(
