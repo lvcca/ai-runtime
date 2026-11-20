@@ -37,7 +37,7 @@ export const redisSet = async (transaction: Transaction) => {
 
 		// get current val if exists
 		if (await redisEntryExists(transaction.id)) {
-			const _existing_entry = await redisGet(transaction.id);
+			const _existing_entry = await redisGet<Transaction>(transaction.id);
 
 			// allow _new_entry overwrite _existing_entry
 			_new_entry = {
@@ -89,7 +89,7 @@ export const redisGetAll = async () => {
 	}
 };
 
-export const redisGet = async (id: string) => {
+export const redisGet = async <T> (id: string) => {
 	try {
 		const _connection = await getConnection();
 		const entry = await _connection.get(id);
@@ -97,7 +97,7 @@ export const redisGet = async (id: string) => {
 		if (!entry || typeof entry !== 'string')
 			throw new Error(`could not find entry with id: ${id}`);
 
-		const parsed: Transaction = JSON.parse(entry);
+		const parsed: T = JSON.parse(entry);
 		return structuredClone(parsed);
 	} catch (e) {
 		logger.error(`something went wrong in redisGet: ${e}`);

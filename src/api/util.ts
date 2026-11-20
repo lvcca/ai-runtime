@@ -45,7 +45,7 @@ export const getHeader = (req: Request, header: string) => {
 	else return _header;
 };
 
-export const GeneralInsert = async ({
+export const generalInsert = async ({
 	req,
 	type,
 	//
@@ -92,10 +92,10 @@ export const GeneralInsert = async ({
 
 	// if exists get entry
 	let currEntry: Transaction | undefined;
-	if (exists) currEntry = await redisGet(id);
+	if (exists) currEntry = await redisGet<Transaction>(id);
 
 	// redis save obj
-	let transaction: Transaction | undefined;
+	let _tx: Transaction | undefined;
 
 	// if exists create new task with link to existing task
 	if (exists) {
@@ -103,19 +103,23 @@ export const GeneralInsert = async ({
 
 		const prompt: PromptChain = currEntry?.prompt ?? {};
 
-		const llmResponse = prompt.llmResponseChain ?? [];
+		const existingResponse = prompt.llmResponseChain ?? [];
 		const userRequest = prompt.userRequestChain ?? [];
 
-		llmResponse?.push(task);
+		existingResponse?.push(task);
 
 		const newPrompt: PromptChain = {
 			userRequestChain: userRequest,
-			llmResponseChain: llmResponse,
+			llmResponseChain: existingResponse,
 		};
 
 		let related: RelatedTransactionsChain = structuredClone(currEntry?.related);
 
 		switch (currEntry?.type) {
+			case TaskType.SHELL_JOB:
+				if (related && !related?.shellJob) related.shellJob = [];
+				related?.shellJob?.push(id);
+				break;
 			case TaskType.EXECUTION:
 				if (related && !related?.exec) related.exec = [];
 				related?.exec?.push(id);
@@ -131,7 +135,7 @@ export const GeneralInsert = async ({
 				break;
 		}
 
-		transaction = {
+		_tx = {
 			id: newId,
 			status: {
 				status: Status.QUEUED,
@@ -145,9 +149,10 @@ export const GeneralInsert = async ({
 		id = newId;
 
 		assert(id === newId, 'sanity check failed id !== newId');
+
 	} else {
 		// create new transaction
-		transaction = {
+		_tx = {
 			id,
 			status: {
 				status: Status.QUEUED,
@@ -162,24 +167,24 @@ export const GeneralInsert = async ({
 
 	if (verbose)
 		logger.debug(
-			`full saved exists transaction: ${JSON.stringify(transaction)}`,
+			`full saved exists transaction: ${JSON.stringify(_tx)}`,
 		);
 
 	if (verbose) logger.debug(`Incoming newTask: ${id}, type: ${type}`);
 
 	switch (type) {
 		case TaskType.SHELL_JOB:
-			successful = await setShellJob(transaction);
+			successful = await setShellJob(_tx);
 			break;
 		case TaskType.EXECUTION:
-			successful = await setExec(transaction);
+			successful = await setExec(_tx);
 			break;
 		case TaskType.JOB:
-			successful = await setJob(transaction);
+			successful = await setJob(_tx);
 			break;
 		case TaskType.TASK_DIRECT:
 		case TaskType.TASK:
-			successful = await setTask(transaction);
+			successful = await setTask(_tx);
 			break;
 	}
 
@@ -228,7 +233,7 @@ export const validate = async (id?: string) => {
 	logger.info(`validating transaction: ${id}`);
 
 	if (!id) throw new Error(`validate requires a valid id... id: ${id}`);
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 	if (!entry) throw new Error(`could not find valid entry: id: ${id}`);
 
 	logger.info(`found entry: ${JSON.stringify(entry)}`);
@@ -297,7 +302,7 @@ Output FORMAT:
 export const runEntry = async (id: string, type: TaskType) => {
 	let result: string = 'FAILED';
 
-	const currentTx = await redisGet(id);
+	const currentTx = await redisGet<Transaction>(id);
 
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
 	const user_req = currentTx?.prompt?.userRequestChain;
@@ -366,7 +371,7 @@ export const newExecCommon = async ({
 }) => {
 	try {
 		//
-		const exec_id = await GeneralInsert({
+		const exec_id = await generalInsert({
 			req,
 			type: TaskType.EXECUTION,
 			//
@@ -413,21 +418,21 @@ export const newExecCommon = async ({
 };
 
 export const newTaskDirect = async (req: Request, res: Response) => {
-	const task_id = await GeneralInsert({ req, type: TaskType.TASK_DIRECT });
+	const task_id = await generalInsert({ req, type: TaskType.TASK_DIRECT });
 	const llm_response = await runEntry(task_id, TaskType.TASK_DIRECT);
 
 	return res.status(200).send(llm_response);
 };
 
 export const newTask = async (req: Request, res: Response) => {
-	const task_id = await GeneralInsert({ req, type: TaskType.TASK });
+	const task_id = await generalInsert({ req, type: TaskType.TASK });
 	const llm_response = await runEntry(task_id, TaskType.TASK);
 
 	return res.status(200).send(llm_response);
 };
 
 export const newJob = async (req: Request, res: Response) => {
-	const successful = await GeneralInsert({ req, type: TaskType.JOB });
+	const successful = await generalInsert({ req, type: TaskType.JOB });
 	return res.status(200).send(successful);
 };
 

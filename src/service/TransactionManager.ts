@@ -1,6 +1,7 @@
 import { call_llm_task_transaction_manager } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import { redisGet } from '../state/state.ts';
+import type { Transaction } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 import { parseJsonSafe, SummarizeLlmTransaction } from '../worker/util.ts';
 
@@ -30,7 +31,7 @@ export const ManageExecutionResults = async (id: string) => {
 			'cannot process this uuid, it has been flagged as invalid...',
 		);
 
-	const entry = await redisGet(id);
+	const entry = await redisGet<Transaction>(id);
 
 	if (!entry) throw new Error(`no entry found with id ${id}`);
 
