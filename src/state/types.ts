@@ -39,8 +39,11 @@ export type RelatedTransactionsChain =
 	  }
 	| undefined;
 
-export type Transaction = {
+export type StateEntryBase = {
 	id: string;
+}
+
+export type Transaction = StateEntryBase & {
 	type?: TaskType;
 	status?: Status;
 	prompt?: PromptChain;

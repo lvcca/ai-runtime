@@ -4,7 +4,7 @@ import {
 	type RedisDefaultModules,
 } from 'redis';
 import { getLogger } from '../logger/logger.ts';
-import type { Transaction } from './types.ts';
+import type { StateEntryBase } from './types.ts';
 import { _env } from '../env.ts';
 
 const logger = getLogger('state');
@@ -26,37 +26,35 @@ export const getConnection = async () => {
 	}
 };
 
-export const redisSet = async (transaction: Transaction) => {
+export const redisSet = async <T extends StateEntryBase> ({incomingEntry, verbose=false}:{incomingEntry: T, verbose?: boolean}) => {
 	let successful = false;
 
 	try {
 		const _connection = await getConnection();
 
-		let _new_entry = structuredClone(transaction);
+		let incomingEntrySafe = structuredClone(incomingEntry);
 
 		// get current val if exists
-		if (await redisEntryExists(transaction.id)) {
-			const _existing_entry = await redisGet<Transaction>(transaction.id);
+		if (await redisEntryExists(incomingEntry.id)) {
+			const existingEntry = await redisGet<T>(incomingEntry.id);
 
 			// allow _new_entry overwrite _existing_entry
-			_new_entry = {
-				..._existing_entry,
-				..._new_entry,
+			incomingEntrySafe = {
+				...existingEntry,
+				...incomingEntrySafe,
 			};
 		}
 
 		// save
 		const saved_status = await _connection.set(
-			_new_entry.id,
-			JSON.stringify(_new_entry),
+			incomingEntrySafe.id,
+			JSON.stringify(incomingEntrySafe),
 		);
 
-		//
-		logger.debug(
-			`redisSet, saved status: ${saved_status}, value: ${JSON.stringify(_new_entry)}`,
-		);
+		if (verbose) logger.debug(`redisSet, saved status: ${saved_status}, value: ${JSON.stringify(incomingEntrySafe)}`);
 
 		successful = true;
+		
 	} catch (e) {
 		logger.error(`something went wrong in redisSet: ${e}`);
 	}
