@@ -81,7 +81,7 @@ ONLY ACCEPTABLE OUTPUT FORMAT:
 `);
 
 	final_results =
-		await parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
+		parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
 
 	logger.debug(
 		`ManageTransaction final_results: ${JSON.stringify(final_results)}`,

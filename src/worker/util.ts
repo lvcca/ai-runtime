@@ -40,7 +40,7 @@ import crypto from 'node:crypto';
 
 const logger = getLogger('worker_util');
 
-export const parseJsonSafe = async <T>(text: string): Promise<T> => {
+export const parseJsonSafe = <T>(text: string): T => {
 	logger.debug(`parseJsonSafe text: ${text}`);
 
 	try {
@@ -62,7 +62,7 @@ export const extractResponseBlock = async (text: string) => {
 		let validJson = false;
 
 		try {
-			await parseJsonSafe(text);
+			parseJsonSafe(text);
 			validJson = true;
 		} catch (e) {
 			logger.error(`extracted text was not valid json, ${e}`);
@@ -572,7 +572,7 @@ export const ToolExec = async ({
 		if (!block)
 			throw new Error(`no block found from narrowed response, block: ${block}`);
 
-		const json_response = await parseJsonSafe<ToolCallPayload>(block);
+		const json_response = parseJsonSafe<ToolCallPayload>(block);
 		const steps = json_response.identified_internal_tools_required;
 
 		// ensure valid array
@@ -807,7 +807,7 @@ OUTPUT FORMAT:
 }
 </LLM_RESPONSE>
 `);
-	const summary = await parseJsonSafe<SummaryType>(
+	const summary = parseJsonSafe<SummaryType>(
 		await extractResponseBlock(summarizedTask),
 	);
 	return summary;

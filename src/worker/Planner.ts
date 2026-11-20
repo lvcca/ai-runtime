@@ -115,7 +115,7 @@ ${JSON.stringify({
 
 	logger.info(`response: ${raw}`);
 
-	const result = await parseJsonSafe<PlannerWorkerResultType>(raw);
+	const result = parseJsonSafe<PlannerWorkerResultType>(raw);
 
 	if (!result)
 		return RevisePlan({
