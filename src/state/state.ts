@@ -80,7 +80,7 @@ export const redisGetAll = async () => {
 		const _connection = await getConnection();
 		const keys = (await _connection.keys('*')) ?? [];
 
-		if (!keys || keys.length < 1) throw new Error(`could not find entries..`);
+		assert(keys.length > 0, `could not find entries..`)
 
 		return structuredClone(keys);
 	} catch (e) {
@@ -89,18 +89,21 @@ export const redisGetAll = async () => {
 };
 
 export const redisGet = async <T>(id: string) => {
-	try {
+	let parsedEntry: T | undefined = undefined;
+
+	try {	
 		const _connection = await getConnection();
 		const entry = await _connection.get(id);
 
-		if (!entry || typeof entry !== 'string')
-			throw new Error(`could not find entry with id: ${id}`);
+		assert(typeof entry === 'string', `could not find entry with id: ${id}`)
 
-		const parsed: T = JSON.parse(entry);
-		return structuredClone(parsed);
+		parsedEntry = JSON.parse(entry) as T;
 	} catch (e) {
 		logger.error(`something went wrong in redisGet: ${e}`);
 	}
+
+	return parsedEntry;
+	
 };
 
 export const redisEntryExists = async (id: string) => {

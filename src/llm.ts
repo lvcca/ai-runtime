@@ -14,6 +14,7 @@ const LLM_MODEL = {
 	QWEN3_CODER: 'qwen3-coder:latest',
 	GRANITE_4: 'granite4.1:3b',
 };
+
 export type LLM_MODEL = (typeof LLM_MODEL)[keyof typeof LLM_MODEL];
 export type OllamaCallResponse = { response: string };
 
@@ -30,23 +31,20 @@ export const ollamaPull = async (model: string) => {
 			stream: false,
 		}),
 	});
-	if (!response.ok)
-		throw new Error(`ollamaPullModel unsuccessful: ${response.status}.`);
-	else return response.json();
+	assert(response.ok, `ollamaPull unsuccessful: ${response.status}.`)
+	return response.json();
 };
 
 export const ollamaPs = async () => {
 	const response = await fetch(`${OLLAMA_URL}/api/ps`, { method: 'GET' });
-	if (!response.ok)
-		throw new Error(`ollamaListModels unsuccessful: ${response.status}.`);
-	else return response.json();
+	assert(response.ok, `ollamaPs unsuccessful: ${response.status}.`)
+	return response.json();
 };
 
 export const ollamaTags = async () => {
 	const response = await fetch(`${OLLAMA_URL}/api/tags`, { method: 'GET' });
-	if (!response.ok)
-		throw new Error(`ollamaListModels unsuccessful: ${response.status}.`);
-	else return response.json();
+	assert(response.ok, `ollamaTags unsuccessful: ${response.status}.`)
+	return response.json();
 };
 
 export const ollamaShow = async ({
@@ -63,7 +61,7 @@ export const ollamaShow = async ({
 			verbose: verbose,
 		}),
 	});
-	assert(response.ok, `ollamaListModels unsuccessful: ${response.status}.`)
+	assert(response.ok, `ollamaShow unsuccessful: ${response.status}.`)
 	return response.json();
 };
 
@@ -87,14 +85,7 @@ export const ollamaGenerate = async (
 			},
 			method: 'POST',
 		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`response unsuccessful: ${response.status}, errorText: ${errorText}`,
-			);
-		}
-
+		assert(response.ok, `ollamaShow unsuccessful: ${response.status}.`)
 		const _response = (await response.json()) as OllamaCallResponse;
 
 		return _response.response;
@@ -222,8 +213,7 @@ export type PROMPTS = (typeof PROMPTS)[keyof typeof PROMPTS];
 export const call_llm_chat = async (prompt: string) => {
 	const withContext = PROMPTS['chat'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
@@ -235,40 +225,35 @@ export const call_llm_chat = async (prompt: string) => {
 export const call_llm_tasks = async (prompt: string) => {
 	const withContext = PROMPTS['tasks'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_toolcall = async (prompt: string) => {
 	const withContext = PROMPTS['execution'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_data_narrower = async (prompt: string) => {
 	const withContext = PROMPTS['tool_narrower'] + PROMPTS['tool_types'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_shell_executor = async (prompt: string) => {
 	const withContext = PROMPTS['shell_executor'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_shell_results_analyzer = async (prompt: string) => {
 	const withContext = PROMPTS['shell_results_analyzer'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
@@ -278,47 +263,41 @@ export const call_llm_shell_branch_analyzer = async (prompt: string) => {
 		PROMPTS['shell_executor_branch_analysis_types'] +
 		prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_shell_branch_simplifier = async (prompt: string) => {
 	const withContext = PROMPTS['shell_executor_branch_analyst'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_task_validator = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_validator'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_task_result_junction_manager = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_junction_manager'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_task_summarizer = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_summarizer'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
 
 export const call_llm_task_transaction_manager = async (prompt: string) => {
 	const withContext = PROMPTS['task_transaction_manager'] + prompt;
 	const res = await ollamaGenerate(withContext);
-	if (!res) throw new Error(`did not receive response from llm: ${res}`);
-
+	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };

@@ -184,8 +184,8 @@ export const appendToTransactionLog = async ({
 				throw new Error(`no case for ${type} in appendToTransactionLog!`);
 		}
 
-		if (!currTx) throw new Error(`no tx found!`);
-
+		assert(!!currTx, `no tx found!`)
+		
 		const currentReq = structuredClone([
 			...(currTx?.prompt?.userRequestChain ?? []),
 		]);

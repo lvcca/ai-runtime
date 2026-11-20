@@ -23,10 +23,8 @@ export type TransactionManagerResponse = {
 };
 
 export const ManageExecutionResults = async (id: string) => {
-	if (!isValidUUID(id))
-		throw new Error(
-			'cannot process this uuid, it has been flagged as invalid...',
-		);
+	
+	assert(isValidUUID(id), 'cannot process this uuid, it has been flagged as invalid...')
 
 	const entry = await redisGet<Transaction>(id);
 

@@ -1,3 +1,5 @@
+import '@lvcca/ts-assert';
+
 import { _env } from './env.ts';
 import { app, webServerPort } from './server/server.ts';
 import './api/api.ts';
@@ -5,9 +7,9 @@ import { getLogger } from './logger/logger.ts';
 import './tools/ToolBootstrap.ts';
 import { hostname } from 'node:os';
 import { toolRegistry } from './tools/ToolRegistry.ts';
-import '@lvcca/ts-assert';
 
 const logger = getLogger('main');
+
 
 app.listen(webServerPort, () => {
 	logger.info(

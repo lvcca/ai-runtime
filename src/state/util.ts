@@ -5,10 +5,7 @@ import { TaskType, type Transaction } from './types.ts';
 const logger = getLogger('state_util');
 
 export const setShellJob = async (tx: Transaction, verbose?: boolean) => {
-	if (tx.type === undefined || tx.type !== TaskType.SHELL_JOB)
-		throw new Error(
-			`task type mismatch: requested: ${tx.type}, expected ${TaskType.SHELL_JOB}`,
-		);
+	assert(tx.type === TaskType.SHELL_JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.SHELL_JOB}`)
 
 	const successful = await redisSet(tx);
 	if (verbose) logger.debug(`setShellJob: successful ${successful}`);
@@ -16,14 +13,7 @@ export const setShellJob = async (tx: Transaction, verbose?: boolean) => {
 };
 
 export const setTask = async (tx: Transaction) => {
-	if (
-		tx.type !== undefined &&
-		tx.type !== TaskType.TASK &&
-		tx.type !== TaskType.TASK_DIRECT
-	)
-		throw new Error(
-			`task type mismatch: requested: ${tx.type}, expected ${TaskType.TASK} || ${TaskType.TASK_DIRECT}`,
-		);
+	assert(tx.type === TaskType.TASK || tx.type === TaskType.TASK_DIRECT, `task type mismatch: requested: ${tx.type}, expected ${TaskType.TASK} || ${TaskType.TASK_DIRECT}`)
 
 	const successful = await redisSet(tx);
 	logger.info(`setTask: successful ${successful}`);
@@ -31,60 +21,52 @@ export const setTask = async (tx: Transaction) => {
 };
 
 export const setExec = async (tx: Transaction & { exec?: string }) => {
-	if (tx.type && tx.type !== TaskType.EXECUTION)
-		throw new Error(
-			`task type mismatch: requested: ${tx.type}, expected ${TaskType.EXECUTION}`,
-		);
+	assert(tx.type === TaskType.EXECUTION, `task type mismatch: requested: ${tx.type}, expected ${TaskType.EXECUTION}`)
+
 	const successful = await redisSet(tx);
 	return successful;
 };
 
 export const setJob = async (tx: Transaction & { job?: string }) => {
-	if (tx.type && tx.type !== TaskType.JOB)
-		throw new Error(
-			`task type mismatch: requested: ${tx.type}, expected ${TaskType.JOB}`,
-		);
+	assert(tx.type === TaskType.JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.JOB}`)
+	
 	const successful = await redisSet(tx);
 	return successful;
 };
 
 export const getShellJob = async (id: string) => {
 	const entry = await redisGet<Transaction>(id);
-	if (entry && entry?.type !== TaskType.SHELL_JOB)
-		throw new Error(
-			`task type mismatch: requested ${TaskType.SHELL_JOB} received: ${entry?.type}`,
-		);
+	
+	assert(!!entry, 'no entry returned for shell job...')
+	assert(entry.type === TaskType.SHELL_JOB, `task type mismatch: requested ${TaskType.SHELL_JOB} received: ${entry?.type}`)
+
 	return entry;
 };
 
 export const getTask = async (id: string) => {
 	const entry = await redisGet<Transaction>(id);
-	if (
-		entry &&
-		entry?.type !== TaskType.TASK &&
-		entry?.type !== TaskType.TASK_DIRECT
-	)
-		throw new Error(
-			`task type mismatch: requested ${TaskType.TASK} || ${TaskType.TASK_DIRECT} received: ${entry?.type}`,
-		);
+
+	assert(!!entry, 'no entry returned for getTask...')
+	assert(entry.type === TaskType.TASK || entry.type === TaskType.TASK_DIRECT, `task type mismatch: requested ${TaskType.TASK} || ${TaskType.TASK_DIRECT} received: ${entry?.type}`)
+
 	return entry;
 };
 
 export const getExec = async (id: string) => {
 	const entry = await redisGet<Transaction>(id);
-	if (entry && entry?.type !== TaskType.EXECUTION)
-		throw new Error(
-			`task type mismatch: requested ${TaskType.EXECUTION} received: ${entry?.type}`,
-		);
+
+	assert(!!entry, 'no entry returned for getExec...')
+	assert(entry.type === TaskType.EXECUTION, `task type mismatch: requested ${TaskType.EXECUTION} received: ${entry?.type}`)
+
 	return entry;
 };
 
 export const getJob = async (id: string) => {
 	const entry = await redisGet<Transaction>(id);
-	if (entry && entry?.type !== TaskType.JOB)
-		throw new Error(
-			`task type mismatch: requested ${TaskType.JOB} received: ${entry?.type}`,
-		);
+
+	assert(!!entry, 'no entry returned for getExec...')
+	assert(entry.type === TaskType.JOB, `task type mismatch: requested ${TaskType.JOB} received: ${entry?.type}`)
+
 	return entry;
 };
 
@@ -111,10 +93,8 @@ export const deleteExecCommon = async (id: string) => {
 	try {
 		const entry = await redisGet<Transaction>(id);
 
-		if (!entry || entry?.type !== TaskType.EXECUTION)
-			throw new Error(
-				`task type mismatch: requested ${TaskType.EXECUTION} received: ${entry?.type}`,
-			);
+		assert(!!entry,)
+		assert(entry.type === TaskType.EXECUTION, `task type mismatch: requested ${TaskType.EXECUTION} received: ${entry?.type}`)
 
 		return await redisDelete(id);
 	} catch (e) {
