@@ -60,20 +60,23 @@ export class ToolRegistry {
 		toolSchema,
 		sanityCheck = false,
 		overwrite = false,
+		verbose = false,
 	}: {
 		name: string;
 		func: _func;
 		toolSchema: Tool;
 		sanityCheck?: boolean;
 		overwrite?: boolean;
+		verbose?: boolean;
 	}) {
 		if (this._tools.has(name) && !overwrite)
 			throw new Error(`Tool '${name}' is already registered`);
 
 		try {
-			logger.debug(
-				`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(toolSchema, null, 2)}`,
-			);
+			if (verbose)
+				logger.debug(
+					`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(toolSchema, null, 2)}`,
+				);
 
 			const tool: RegisteredToolEntry = {
 				name,

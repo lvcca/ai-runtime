@@ -84,6 +84,8 @@ export const GeneralInsert = async ({
 		task = getHeader(req, 'task');
 	}
 
+	assert(id !== '' && task !== '', 'Malformed call to GeneralInsert...');
+
 	const exists = await redisEntryExists(id);
 
 	if (verbose) logger.debug(`exists: ${exists}`);
@@ -142,7 +144,7 @@ export const GeneralInsert = async ({
 		// for return statement to be accurate
 		id = newId;
 
-		logger.info(`sanity check: ${id === newId}`);
+		assert(id === newId, 'sanity check failed id !== newId');
 	} else {
 		// create new transaction
 		transaction = {
