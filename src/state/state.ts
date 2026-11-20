@@ -80,7 +80,7 @@ export const redisGetAll = async () => {
 		const _connection = await getConnection();
 		const keys = (await _connection.keys('*')) ?? [];
 
-		assert(keys && keys.length > 1, `could not find entries..`)
+		assert(keys.length > 0, `could not find entries..`)
 
 		return structuredClone(keys);
 	} catch (e) {
@@ -95,7 +95,7 @@ export const redisGet = async <T>(id: string) => {
 		const _connection = await getConnection();
 		const entry = await _connection.get(id);
 
-		assert(entry !== null, `could not find entry with id: ${id}`)
+		assert(typeof entry === 'string', `could not find entry with id: ${id}`)
 
 		parsedEntry = JSON.parse(entry) as T;
 	} catch (e) {
