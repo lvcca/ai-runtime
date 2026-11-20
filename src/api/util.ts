@@ -290,7 +290,7 @@ Output FORMAT:
 		throw new Error(`invalid response from validator: ${responseBlock}`);
 
 	const validatorResponse =
-		await parseJsonSafe<ValidatorResponse>(responseBlock);
+		parseJsonSafe<ValidatorResponse>(responseBlock);
 
 	logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
 
