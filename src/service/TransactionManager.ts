@@ -1,5 +1,6 @@
 import { call_llm_task_transaction_manager } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
+import type { SummaryType } from '../prompts/types/SummaryType.js';
 import { redisGet } from '../state/state.ts';
 import type { StateTransaction } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
@@ -32,9 +33,9 @@ export const manageExecutionResults = async (id: string) => {
 
 	logger.debug(`execution_id: ${id}`);
 
-	const summary = await summarizeExecTransaction(id);
+	const summary: SummaryType = await summarizeExecTransaction(id);
 
-	let final_results: TransactionManagerResponse = {};
+	let finalResults: TransactionManagerResponse = {};
 
 	const txMgrResponse = await call_llm_task_transaction_manager(`
 You are an Execution Task Transaction Manager.
@@ -75,11 +76,11 @@ ONLY ACCEPTABLE OUTPUT FORMAT:
 };
 `);
 
-	final_results = parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
+	finalResults = parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
 
 	logger.debug(
-		`ManageTransaction final_results: ${JSON.stringify(final_results)}`,
+		`ManageTransaction final_results: ${JSON.stringify(finalResults)}`,
 	);
 
-	return final_results;
+	return finalResults;
 };

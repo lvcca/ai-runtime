@@ -74,7 +74,7 @@ export type StateTransaction = TransactionBase & {
 	result?: string;
 
 	/** The response returned by the validator after evaluating the result. */
-	validatorResponse?: ValidatorResponse;
+	validatorResponseChain?: ValidatorResponse[];
 };
 
 export const execCommonCaller = {
