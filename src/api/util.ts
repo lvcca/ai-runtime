@@ -35,6 +35,7 @@ import {
 	TaskType,
 	type StateTransaction,
 	type execOptions,
+	ExecCallerType,
 } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 
@@ -428,19 +429,19 @@ export const manageExecResults = async (
  * @param {string|undefined} [_id]   Identifier used for internal utility execution and branching logic.
  * @param {string|undefined} [_task] Task identifier or type used to determine the appropriate execution path.
  *
- * @returns {Promise<*>} Result of the execution, depending on the invocation context and task.
+ * @returns {Promise<string | Response>} Result of the execution, depending on the invocation context and task.
  */
 
-export const newExec = async (options: execOptions) => {
+export const newExec = async (options: execOptions): Promise<string | Response> => {
 
 	// scenario assertions
 	switch(options.callerType) {
-		case 'ENDPOINT':
+		case ExecCallerType.ENDPOINT:
 			assert(options.req !== undefined, 'endpoint call requires req')
 			assert(options.res !== undefined, 'endpoint call requires res')
 			break;
 
-		case 'UTILITY':
+		case ExecCallerType.UTILITY:
 			assert(options._id !== undefined, 'utility call requires _id')
 			assert(options._task !== undefined, 'utility call requires _task')
 			break;
@@ -463,14 +464,16 @@ export const newExec = async (options: execOptions) => {
 			id: exec_id, 
 			type: TaskType.EXECUTION
 		});
+
+		// post execution stuffs
 		
 		if (options.verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
 		
 		switch(options.callerType) {
-			case 'ENDPOINT':
+			case ExecCallerType.ENDPOINT:
 				return options.res.status(200).send(response);
 
-			case 'UTILITY':
+			case ExecCallerType.UTILITY:
 				return response;
 		}
 		
@@ -478,10 +481,10 @@ export const newExec = async (options: execOptions) => {
 		logger.error(`something went wrong in newExec: ${e}`);
 
 		switch(options.callerType) {
-			case 'ENDPOINT':
+			case ExecCallerType.ENDPOINT:
 				return options.res.status(500).json({error: 'something went wrong...'});
 			
-			case 'UTILITY':
+			case ExecCallerType.UTILITY:
 				throw e
 		}
 		
