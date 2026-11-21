@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { getLogger } from '../logger/logger.ts';
-import { redisEntryExists, redisGet, redisSet } from '../state/state.ts';
+import { redisGet, } from '../state/state.ts';
 import {
 	deleteExecCommon,
 	deleteJobCommon,
@@ -181,7 +181,16 @@ export const generalInsert = async ({
 		logger.debug(`Incoming newTask: ${id}, type: ${type}`);
 	}
 
-	switch (type) {
+	successful = await stateTransactionSet(_tx)
+
+	if (verbose) logger.info(`successful: ${successful}`);
+
+	return id;
+};
+
+export const stateTransactionSet = async (_tx: StateTransaction) => {
+	let successful = false
+	switch (_tx.type) {
 		case TaskType.SHELL_JOB:
 			successful = await setShellJob(_tx);
 			break;
@@ -196,11 +205,8 @@ export const generalInsert = async ({
 			successful = await setTask(_tx);
 			break;
 	}
-
-	if (verbose) logger.info(`successful: ${successful}`);
-
-	return id;
-};
+	return successful;
+}
 
 export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 	let tasks: StateTransaction[] = [];
@@ -237,6 +243,11 @@ export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 
 	return out;
 };
+
+/**
+ * validate execution transaction
+ * @returns {ValidatorResponse} response from validator call 
+ */
 
 export const executionValidator = async ({id, verbose=false}:{id?: string, verbose?: boolean}) => {
 	if (verbose) logger.debug(`validating transaction: ${id}`);
@@ -288,19 +299,22 @@ ${getTypeFromFile({file: 'ValidatorResponse.d.ts'})}
 	assert(responseBlock !== undefined, 'validator returned undefined');
 	assert(!!responseBlock, 'validator returned an empty response');
 	assert(typeof responseBlock === 'string', 'validator should return a string');
-	assert(!(responseBlock as any instanceof Error), 'validator returned an Error object');
 	
 	// get valid object from string
 	const validatorResponse = parseJsonSafe<ValidatorResponse>(responseBlock);
 
 	if (verbose) logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
 	
-	// save valid object from string
+	// push latest validator response for state update
+	(entry.validatorResponseChain ??= []).push(validatorResponse)
+
+	// new state obj
 	const updatedTransaction: StateTransaction = {
 		id, 
-		validatorResponse
+		validatorResponseChain: entry.validatorResponseChain
 	}
 
+	// state update 
 	await setExec(updatedTransaction);
 
 	return validatorResponse;
@@ -371,7 +385,7 @@ const getExecManagerNextAction = async (
 };
 
 
-const manageExecResults = async (
+export const manageExecResults = async (
 	{exec_id}: {exec_id: string}
 	) => {
 		// analysis and plan branching
@@ -380,14 +394,19 @@ const manageExecResults = async (
 		const summary = await summarizeExecTransaction(exec_id);
 		const execManagementResults = await manageExecutionResults(exec_id);
 
-		if (
-			execManagementResults.next_action &&
-			execManagementResults?.transaction_status !== 'success'
-		) {
+		// pivot determination
+		const shouldPivotToNewAction = execManagementResults.next_action && execManagementResults?.transaction_status !== 'success'
+		if (shouldPivotToNewAction) {
 			const res = await getExecManagerNextAction(exec_id, execManagementResults);
 			// if branching?
 			// remove return
+			
 			return res; //<-- for lint #TODO fix me with feature implementation exec branching
+		}
+
+		// no pivot required
+		else {
+			return summary
 		}
 }
 
