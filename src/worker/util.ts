@@ -3,6 +3,7 @@ import {
 	call_llm_shell_branch_analyzer,
 	call_llm_shell_branch_simplifier,
 	call_llm_task_summarizer,
+	getTypeFromFile,
 	PROMPTS,
 } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
@@ -12,6 +13,7 @@ import type {
 	ToolCallPayload,
 } from '../prompts/types/ApiToolChain.js';
 import type { StandardStreams } from '../prompts/types/ShellExecutor.js';
+import type { SummaryType } from '../prompts/types/SummaryType.js';
 import { redisGet } from '../state/state.ts';
 import {
 	type PromptChain,
@@ -618,7 +620,9 @@ ${next_step}
 
 Expected Output Format:
 <LLM_RESPONSE>
-    ShellBranchAnalysisSimplified
+    use ShellBranchAnalysisSimplified from the following: {
+		${await getTypeFromFile({file: 'ShellBranch.d.ts'})}
+	}
 </LLM_RESPONSE>
 `);
 
@@ -677,7 +681,9 @@ ${await getTask(task_id)}
 
 Expected Output Format:
 <LLM_RESPONSE>
-    ShellBranchAnalysis
+    use ShellBranchAnalysis from the following: {
+		${await getTypeFromFile({file: 'ShellBranch.d.ts'})}
+	}
 </LLM_RESPONSE>
 `);
 
@@ -747,18 +753,10 @@ Analysis Instructions:
 Expected Output Format:
 <LLM_RESPONSE>
     ShellBranchAnalysis
+	${await getTypeFromFile({file: 'ShellBranch.d.ts'})}
 </LLM_RESPONSE>`);
 
 	return finalResults;
-};
-
-export type SummaryType = {
-	status: 'success' | 'failure' | 'partial_success' | 'unknown';
-	summary: string;
-	result: string;
-	error: string;
-	steps: string[];
-	artifacts: string[];
 };
 
 /**
@@ -773,7 +771,7 @@ export const summarizeExecTransaction = async (id: string) => {
 	const summarizedTask = await call_llm_task_summarizer(`
 You are an ai task result summarizer.
 
-Your job is to parse results and determine a definitive next step is required.
+Your job is to parse results and determine if a definitive next step is required.
 
 Initial Tasks:
 ${currObj?.promptChain?.userRequestChain}
@@ -793,18 +791,9 @@ RULES:
 
 OUTPUT FORMAT:
 <LLM_RESPONSE>
-{
-	"status": "success" | "failure" | "partial_success" | "unknown",
-	"summary": string,
-	"result": string,
-	"error": string,
-	"steps": string [],
-	"artifacts": string []
-}
+${await getTypeFromFile({file: 'SummaryType.d.ts'})}
 </LLM_RESPONSE>
 `);
-	const summary = parseJsonSafe<SummaryType>(
-		await extractResponseBlock(summarizedTask),
-	);
+	const summary = parseJsonSafe<SummaryType>( await extractResponseBlock(summarizedTask), );
 	return summary;
 };
