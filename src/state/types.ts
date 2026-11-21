@@ -1,4 +1,4 @@
-import type { ValidatorResponse } from '../prompts/types/TaskValidator.js';
+import type { ValidatorResponse } from '../prompts/types/ValidatorResponse.js';
 import type { Request, Response } from 'express';
 
 export type PromptChain = {

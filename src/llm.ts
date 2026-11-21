@@ -123,6 +123,31 @@ const load_context = async ({
 	return PROMPTS_CONTENT;
 };
 
+export const getTypeFromFile = async ({
+	file,
+	verbose,
+}: {
+	file: string;
+	verbose?: boolean;
+}) => {
+
+	let fileString: string | undefined;
+
+	if (verbose) logger.debug(`desired file read: ${file}`);
+
+	try {
+		const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+		const appDistDir = path.resolve(currentDirectory, '../dist/prompts/types/');
+		const filePath = path.join(appDistDir, file);
+		fileString = await readFile(filePath, 'utf8');
+		if (verbose) logger.debug(`file_string: ${fileString}`);
+	} catch (e) {
+		logger.error(`something went wrong in load_context ${e}`);
+	}
+
+	return fileString;
+};
+
 // prompts
 const CODING_TASKS_PROMPTS_FILE = './prompts/coding_tasks_prompts.md';
 const EXECUTION_PROMPTS_FILE = './prompts/execution_prompts.md';

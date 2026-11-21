@@ -15,7 +15,7 @@ import {
 	stateTransactionExists,
 } from '../state/util.ts';
 import { randomUUID } from 'node:crypto';
-import { call_llm_task_validator } from '../llm.ts';
+import { call_llm_task_validator, getTypeFromFile } from '../llm.ts';
 import {
 	extractResponseBlock,
 	parseJsonSafe,
@@ -27,7 +27,7 @@ import {
 	manageExecutionResults,
 	type TransactionManagerResponse,
 } from '../service/TransactionManager.ts';
-import type { ValidatorResponse } from '../prompts/types/TaskValidator.js';
+import type { ValidatorResponse } from '../prompts/types/ValidatorResponse.js';
 import {
 	type PromptChain,
 	type RelatedTransactionsChain,
@@ -279,13 +279,7 @@ RULES:
 
 Output FORMAT:
 <LLM_RESPONSE>
-{
-		"valid": boolean,
-		"reason": string | null,
-		"confidence": number,
-		"issues": string[],
-		"evidence": string[]
-}
+${getTypeFromFile({file: 'ValidatorResponse.d.ts'})}
 </LLM_RESPONSE>`);
 
 	if (verbose) logger.debug(`Task Validator Result: ${_result}`);

@@ -81,7 +81,6 @@ export const runExec = async (exec_id: string, userRequest: string) => {
 			toolExecId,
 			task: userRequest,
 			toolExecPayload: toolExecChain,
-			currentTransaction: currEntry
 		});
 
 		// execution result
