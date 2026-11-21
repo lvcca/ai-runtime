@@ -52,7 +52,7 @@ RULES:
 ONLY ACCEPTABLE OUTPUT FORMAT:
 ToolCallPayload`);
 
-export const RunExec = async (exec_id: string, userRequest: string) => {
+export const runExec = async (exec_id: string, userRequest: string) => {
 	logger.debug(`RunExec, id: ${exec_id}, task: ${userRequest}`);
 	
 	// set status
@@ -66,7 +66,8 @@ export const RunExec = async (exec_id: string, userRequest: string) => {
 	let finalOutput: string = 'FAILED';
 
 	try {
-		let toolExecPayload = await GetToolExecPayload(userRequest, currEntry);
+
+		let toolExecChain = await GetToolExecPayload(userRequest, currEntry);
 
 		await appendToTransactionLog({
 			_id: exec_id,
@@ -79,7 +80,7 @@ export const RunExec = async (exec_id: string, userRequest: string) => {
 		const toolOutput = await ToolExec({
 			toolExecId,
 			task: userRequest,
-			toolExecPayload,
+			toolExecPayload: toolExecChain,
 			currentTransaction: currEntry
 		});
 
@@ -99,11 +100,13 @@ export const RunExec = async (exec_id: string, userRequest: string) => {
 				newLLMResponse: finalOutput,
 			});
 		}
+
 		// we shouldn't hit this, just safety
 		else
 			throw new Error(
 				`toolOutput did not match expected string output type: ${typeof toolOutput}, ${JSON.stringify(toolOutput)}`,
 			);
+
 	} catch (e) {
 		logger.error(`something went wrong in RunExec: ${e}`);
 

@@ -50,6 +50,13 @@ export const parseJsonSafe = <T>(text: string): T => {
 	}
 };
 
+
+/**
+ * 
+ * @param text 
+ * @returns first valid LLM_RESPONSE found
+ */
+
 export const extractResponseBlock = async (text: string) => {
 	const pattern = /<LLM_RESPONSE>([\s\S]*?)<\/LLM_RESPONSE>/;
 
@@ -58,9 +65,11 @@ export const extractResponseBlock = async (text: string) => {
 	logger.info(`extract response block text: ${text}, match: ${match}`);
 
 	if (match) return match[1].trim();
+
 	else {
 		let validJson = false;
 
+		// try to parseAsJson
 		try {
 			parseJsonSafe(text);
 			validJson = true;
@@ -68,6 +77,7 @@ export const extractResponseBlock = async (text: string) => {
 			logger.error(`extracted text was not valid json, ${e}`);
 		}
 
+		// actual error exit
 		if (!validJson) {
 			logger.debug(`no match found defaulting to text passed in: ${text}`);
 			return text;
@@ -262,7 +272,7 @@ export const execWrapper = async (func: _func, args: string[]) => {
  * @returns
  */
 
-const SafeExecute = async (
+const safeExecute = async (
 	key: string,
 	tool: RegisteredToolEntry,
 	Params: Parameter[],
@@ -402,6 +412,7 @@ const AddJob = async (id: string, job_id: string) => {
 /**
  * @param exec_id transaction id
  * @param {ToolCallPayload} toolPayload llm generated tool payload in json form
+ * @throws {Error} on pivot | branching, prevent further execution
  * @returns
  */
 
@@ -411,34 +422,38 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 	let jobs = new Map<string, string | undefined>();
 
 	try {
+
 		const toolExecutionSteps = toolPayload.identified_internal_tools_required; // in order of execution llm decided
 
 		for (const step of toolExecutionSteps) {
+
 			// make new transaction for each step
-			const TID = crypto.randomUUID();
+			const _id = crypto.randomUUID();
 
 			try {
 				// prevent unnessary executions if pivot identified
+
 				if (pivotRequired) throw new Error('pivotRequired in branching!');
 
 				/**
 				 * insert entry for job
 				 */
 
-				// local tracker
-				jobs.set(TID, undefined);
+				// local init
+				jobs.set(_id, undefined);
 
 				// redis entry
-				await setJob({
-					id: TID,
+				const jobSuccessful = await setJob({
+					id: _id,
 					type: TaskType.JOB,
 					status: { status: Status.QUEUED },
-					related: { exec: [exec_id] },
+					related: { exec: [exec_id] }, //<- @TODO audit array assignment, potential overwrite of previous data
 					job: JSON.stringify(step),
 				});
+				assert(jobSuccessful, 'job shouldnt fail')
 
 				// add link to main task
-				await AddJob(exec_id, TID);
+				await AddJob(exec_id, _id);
 
 				// always be type safe with llm generated stuffs
 				let safeToolName: unknown = step['Tool'];
@@ -471,14 +486,14 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 						`could not find tool ${JSON.stringify(safeToolName)}`,
 					);
 
-				const result = await SafeExecute(TID, foundToolEntry, params);
+				const result = await safeExecute(_id, foundToolEntry, params);
 
 				if (!result) throw new Error(`no result came back from SafeExecute...`);
 
 				final_results = result;
 
 				await setJob({
-					id: TID,
+					id: _id,
 					type: TaskType.JOB,
 					status: { status: Status.COMPLETED },
 					job: JSON.stringify(step),
@@ -490,7 +505,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				);
 
 				await setJob({
-					id: TID,
+					id: _id,
 					type: TaskType.JOB,
 					status: { status: Status.FAILED },
 					related: { exec: [exec_id] },
@@ -552,15 +567,15 @@ export const ToolExec = async ({
 
 	try {
 		const narrowed = await call_llm_data_narrower(
-			`sanitize the following output: ${toolExecPayload}`,
+			`sanitize the following output: \' ${toolExecPayload} \'`,
 		);
 
-		const block = await extractResponseBlock(narrowed);
+		const responseBlock = await extractResponseBlock(narrowed);
 
-		if (!block)
-			throw new Error(`no block found from narrowed response, block: ${block}`);
+		if (!responseBlock)
+			throw new Error(`no block found from narrowed response, block: ${responseBlock}`);
 
-		const json_response = parseJsonSafe<ToolCallPayload>(block);
+		const json_response = parseJsonSafe<ToolCallPayload>(responseBlock);
 		const steps = json_response.identified_internal_tools_required;
 
 		// ensure valid array

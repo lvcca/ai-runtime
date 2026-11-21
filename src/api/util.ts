@@ -20,8 +20,8 @@ import {
 	parseJsonSafe,
 	SummarizeLlmTransaction,
 } from '../worker/util.ts';
-import { RunTask } from '../worker/TaskWorker.ts';
-import { RunExec } from '../worker/ExecutionWorker.ts';
+import { runTask } from '../worker/TaskWorker.ts';
+import { runExec } from '../worker/ExecutionWorker.ts';
 import {
 	ManageExecutionResults,
 	type TransactionManagerResponse,
@@ -317,7 +317,7 @@ export const run = async ({id, type}:{id: string, type: TaskType}) => {
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
 	const userRequestChain = currentTx?.promptChain?.userRequestChain;
 
-	assert(!!userRequestChain, 'user request chain unefined!')
+	assert(!!userRequestChain, 'user request chain undefined!')
 	assert(userRequestChain.length > 0, 'user request chain is empty!')
 
 	const latestRequest = userRequestChain[0];
@@ -325,11 +325,12 @@ export const run = async ({id, type}:{id: string, type: TaskType}) => {
 	switch (type) {
 		case TaskType.TASK_DIRECT:
 		case TaskType.TASK:
-			result = await RunTask(id, latestRequest, taskDirect);
+			result = await runTask(id, latestRequest, taskDirect);
 			break;
 		case TaskType.EXECUTION:
-			result = await RunExec(id, latestRequest);
+			result = await runExec(id, latestRequest);
 			break;
+
 		default:
 			logger.warn(`no case for ${type}`);
 	}
@@ -357,13 +358,13 @@ const getExecManagerNextAction = async (
 		case 'retry':
 			const prompt = managerResponse.next_action.prompt;
 
+			// START HERE
 			await newExecCommon({
 				_id: exec_id,
 				_task: prompt,
 			});
 
 			// next actions here
-
 			success = true;
 			break;
 	}
@@ -385,7 +386,9 @@ export const newExecCommon = async ({
 	_task?: string;
 	verbose?: boolean;
 }) => {
+
 	try {
+
 		// persist
 		const exec_id = await generalInsert({
 			req,
@@ -422,11 +425,12 @@ export const newExecCommon = async ({
 			summary: summary,
 			ManagerResponse: execManagementResults,
 		};
-
+		
 		if (verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
-
+		
 		// else
 		return res?.status(200).send(response);
+
 	} catch (e) {
 		logger.error(`something went wrong in newExec: ${e}`);
 		return res?.status(500).send(undefined);
