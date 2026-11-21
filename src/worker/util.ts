@@ -103,54 +103,31 @@ export const updateRelated = async ({
 
 	try {
 		// get current state
-		let currEntry: StateTransaction | undefined;
+		let _tx: StateTransaction | undefined = await getStateCommon({_id, type})
 
-		switch (type) {
-			case TaskType.EXECUTION:
-				currEntry = await getExec(_id);
-				break;
-			case TaskType.JOB:
-				currEntry = await getJob(_id);
-				break;
-			case TaskType.TASK_DIRECT:
-			case TaskType.TASK:
-				currEntry = await getTask(_id);
-				break;
-		}
-
-		if (!currEntry) throw new Error(`could not find entry... ${_id}`);
+		if (!_tx) throw new Error(`could not find entry... ${_id}`);
 
 		// update current state
 		const newJobs = related?.job;
 		if (newJobs)
 			for (let i = 0; i < newJobs?.length; i++)
-				if (!currEntry.related?.job?.includes(newJobs[i]))
-					currEntry.related?.job?.push(newJobs[i]);
+				if (!_tx.related?.job?.includes(newJobs[i]))
+					_tx.related?.job?.push(newJobs[i]);
 
 		const newExecs = related?.exec;
 		if (newExecs)
 			for (let i = 0; i < newExecs?.length; i++)
-				if (!currEntry.related?.exec?.includes(newExecs[i]))
-					currEntry.related?.exec?.push(newExecs[i]);
+				if (!_tx.related?.exec?.includes(newExecs[i]))
+					_tx.related?.exec?.push(newExecs[i]);
 
 		const newTask = related?.task;
 		if (newTask)
 			for (let i = 0; i < newTask?.length; i++)
-				if (!currEntry.related?.task?.includes(newTask[i]))
-					currEntry.related?.task?.push(newTask[i]);
+				if (!_tx.related?.task?.includes(newTask[i]))
+					_tx.related?.task?.push(newTask[i]);
 
-		switch (type) {
-			case TaskType.EXECUTION:
-				success = await setExec(currEntry);
-				break;
-			case TaskType.JOB:
-				success = await setJob(currEntry);
-				break;
-			case TaskType.TASK_DIRECT:
-			case TaskType.TASK:
-				success = await setTask(currEntry);
-				break;
-		}
+		success = await setStateCommon({_tx, type})
+
 	} catch (e) {
 		logger.error(`something went wrong in updateRelated ${e}`);
 	}
@@ -172,30 +149,7 @@ export const appendToTransactionLog = async ({
 }) => {
 	let success = false;
 	try {
-		let currTx: StateTransaction | undefined;
-
-		switch (type) {
-			case TaskType.TASK_DIRECT:
-			case TaskType.TASK:
-				currTx = await getTask(_id);
-				break;
-
-			case TaskType.EXECUTION:
-				currTx = await getExec(_id);
-				break;
-
-			case TaskType.JOB:
-				currTx = await getJob(_id);
-				break;
-
-			case TaskType.SHELL_JOB:
-				currTx = await getShellJob(_id);
-				break;
-
-			default:
-				throw new Error(`no case for ${type} in appendToTransactionLog!`);
-		}
-
+		let currTx: StateTransaction | undefined = await getStateCommon({_id, type})
 		assert(!!currTx, `no tx found!`)
 		
 		const newUserReqChain = structuredClone([
@@ -223,24 +177,8 @@ export const appendToTransactionLog = async ({
 		};
 
 		// persist 
-		switch (type) {
-			case TaskType.SHELL_JOB:
-				success = await setShellJob(_tx);
-				break;
-			case TaskType.JOB:
-				success = await setJob(_tx);
-				break;
-			case TaskType.TASK_DIRECT:
-			case TaskType.TASK:
-				success = await setTask(_tx);
-				break;
-			case TaskType.EXECUTION:
-				success = await setExec(_tx);
-				break;
-			default:
-				logger.warn(`no case for type: ${type}`);
-				break;
-		}
+		success = await setStateCommon({_tx, type})
+		logger.debug(`persisted: ${success}`)
 
 	} catch (e) {
 		logger.error(
@@ -250,6 +188,62 @@ export const appendToTransactionLog = async ({
 
 	return success;
 };
+
+export const getStateCommon = async (
+	{_id, type} : 
+	{_id: string, type: TaskType}
+	) => {
+	let _tx: StateTransaction | undefined;
+
+	switch (type) {
+		case TaskType.SHELL_JOB:
+			_tx = await getShellJob(_id);
+			break;
+		case TaskType.JOB:
+			_tx = await getJob(_id);
+			break;
+		case TaskType.TASK_DIRECT:
+		case TaskType.TASK:
+			_tx = await getTask(_id);
+			break;
+		case TaskType.EXECUTION:
+			_tx = await getExec(_id);
+			break;
+		default:
+			logger.warn(`no case for type: ${type}`);
+			break;
+	}
+	return _tx;
+}
+
+export const setStateCommon = async (
+	{_tx, type} : 
+	{_tx: StateTransaction, type: TaskType}
+	) => {
+	let success = false
+	
+	switch (type) {
+		case TaskType.SHELL_JOB:
+			success = await setShellJob(_tx);
+			break;
+		case TaskType.JOB:
+			success = await setJob(_tx);
+			break;
+		case TaskType.TASK_DIRECT:
+		case TaskType.TASK:
+			success = await setTask(_tx);
+			break;
+		case TaskType.EXECUTION:
+			success = await setExec(_tx);
+			break;
+		default:
+			logger.warn(`no case for type: ${type}`);
+			break;
+	}
+
+	return success;
+
+}
 
 export const execWrapper = async (func: _func, args: string[]) => {
 	let result: string;

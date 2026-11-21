@@ -52,7 +52,7 @@ RULES:
 ONLY ACCEPTABLE OUTPUT FORMAT:
 ToolCallPayload`);
 
-export const runExec = async (exec_id: string, userRequest: string) => {
+export const runExec = async (exec_id: string, userRequest: string, ) => {
 	logger.debug(`RunExec, id: ${exec_id}, task: ${userRequest}`);
 	
 	// set status

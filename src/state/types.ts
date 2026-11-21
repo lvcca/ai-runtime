@@ -77,17 +77,16 @@ export type StateTransaction = TransactionBase & {
 	validatorResponseChain?: ValidatorResponse[];
 };
 
-export const execCommonCaller = {
-    ENDPOINT: 'ENDPOINT',
-    UTILITY: 'UTILITY',
+export const ExecCallerType = {
+	ENDPOINT: 'ENDPOINT',
+	UTILITY: 'UTILITY',
 } as const;
 
-export type execCaller =
-    typeof execCommonCaller[keyof typeof execCommonCaller];
+export type ExecCaller = (typeof ExecCallerType)[keyof typeof ExecCallerType];
 
 export type execOptions =
     | {
-        callerType: typeof execCommonCaller.ENDPOINT;
+        callerType: typeof ExecCallerType.ENDPOINT;
         req: Request;
         res: Response;
         _id?: never;
@@ -95,7 +94,7 @@ export type execOptions =
         verbose?: boolean;
     }
     | {
-        callerType: typeof execCommonCaller.UTILITY;
+        callerType: typeof ExecCallerType.UTILITY;
         _id: string;
         _task: string;
         req?: never;
