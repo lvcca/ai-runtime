@@ -11,7 +11,7 @@ import { appendToTransactionLog } from './util.ts';
 
 const logger = getLogger('TaskWorker');
 
-export const RunTask = async (
+export const runTask = async (
 	task_id: string,
 	task: string,
 	LLM_DIRECT: boolean,
