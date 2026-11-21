@@ -15,8 +15,10 @@ export const RunTask = async (
 	task_id: string,
 	task: string,
 	LLM_DIRECT: boolean,
+	verbose?: boolean
 ) => {
-	logger.info(
+
+	if (verbose) logger.info(
 		`RunTask: task_id: ${task_id}, task: ${task}, LLM_DIRECT: ${LLM_DIRECT}`,
 	);
 
@@ -32,6 +34,7 @@ export const RunTask = async (
 
 	try {
 		if (LLM_DIRECT) final_output = await call_llm_chat(`${task}`);
+		
 		else {
 			plan = await GetPlan(task);
 
@@ -71,6 +74,7 @@ export const RunTask = async (
 		});
 
 		status = Status.COMPLETED;
+		
 	} catch (e) {
 		logger.error(`something went wrong in TaskWorker:RunTask: ${e}`);
 

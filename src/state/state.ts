@@ -4,7 +4,7 @@ import {
 	type RedisDefaultModules,
 } from 'redis';
 import { getLogger } from '../logger/logger.ts';
-import type { StateEntryBase } from './types.ts';
+import type { TransactionBase } from './types.ts';
 import { _env } from '../env.ts';
 
 const logger = getLogger('state');
@@ -26,7 +26,7 @@ export const getConnection = async () => {
 	}
 };
 
-export const redisSet = async <T extends StateEntryBase> ({incomingEntry, verbose=false}:{incomingEntry: T, verbose?: boolean}) => {
+export const redisSet = async <T extends TransactionBase> ({incomingEntry, verbose=false}:{incomingEntry: T, verbose?: boolean}) => {
 	let successful = false;
 
 	try {
