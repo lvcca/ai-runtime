@@ -1,6 +1,6 @@
 import { app } from '../server/server.ts';
 import {
-	newExecCommon,
+	newExec,
 	newTaskDirect,
 	newTask,
 	allExec,
@@ -16,8 +16,8 @@ import {
 // all incoming traffic
 app.use(_try(validateIncomingTraffic));
 
-// all apis
-app.get('/', (_, res) => res.status(200).send(`Hello world! ${new Date()}`));
+// sanity check
+app.get('/', _try((_, res) => res.status(200).send(`Hello world! ${new Date()}`)));
 
 // Tasks, general purpose task
 app.get(['/task/', '/task/allTasks'], _try(allTasks));
@@ -27,7 +27,7 @@ app.get('/task/delete', _try(deleteTask));
 
 // Execs, general purpose execution
 app.get(['/exec/', '/exec/allExecs'], _try(allExec));
-app.get('/exec/newExec', _try(newExecCommon));
+app.get('/exec/newExec', _try(async (req, res) => await newExec({res, req, callerType: 'ENDPOINT'})));
 app.get('/exec/deleteExec', _try(deleteExec));
 
 // Jobs, general purpose job / service

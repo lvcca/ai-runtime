@@ -33,6 +33,7 @@ import {
 	Status,
 	TaskType,
 	type StateTransaction,
+	type execOptions,
 } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 
@@ -359,9 +360,10 @@ const getExecManagerNextAction = async (
 			const prompt = managerResponse.next_action.prompt;
 
 			// START HERE
-			await newExecCommon({
+			await newExec({
 				_id: exec_id,
 				_task: prompt,
+				callerType: 'UTILITY'
 			});
 
 			// next actions here
@@ -372,39 +374,12 @@ const getExecManagerNextAction = async (
 	return success;
 };
 
-export const newExecCommon = async ({
-	req,
-	res,
-	_id,
-	_task,
-	verbose=false
-}: {
-	req?: Request;
-	res?: Response;
-	//
-	_id?: string;
-	_task?: string;
-	verbose?: boolean;
-}) => {
 
-	try {
-
-		// persist
-		const exec_id = await generalInsert({
-			req,
-			type: TaskType.EXECUTION,
-			//
-			_id,
-			_task,
-		});
-
-		// execute
-		const llm_response = await run({
-			id: exec_id, 
-			type: TaskType.EXECUTION
-		});
-
+const manageExecResults = async (
+	{exec_id}: {exec_id: string}
+	) => {
 		// analysis and plan branching
+		// this should be seperate function to help keep newExec similar to newTask
 		const validatorResponse = await ExecValidator({id: exec_id});
 		const summary = await SummarizeLlmTransaction(exec_id);
 		const execManagementResults = await ManageExecutionResults(exec_id);
@@ -418,22 +393,83 @@ export const newExecCommon = async ({
 			// remove return
 			return res; //<-- for lint #TODO fix me with feature implementation exec branching
 		}
+}
 
-		const response = {
-			llm_response: llm_response,
-			validatorResponse: validatorResponse,
-			summary: summary,
-			ManagerResponse: execManagementResults,
-		};
-		
-		if (verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
-		
-		// else
-		return res?.status(200).send(response);
+/**
+ * Common execution function.
+ *
+ * Supports two invocation scenarios:
+ *
+ * 1. Express route invocation:
+ *    - `req` and `res` are provided when called from an Express GET endpoint.
+ *    - Handles execution within an HTTP request/response cycle.
+ *
+ * 2. Utility invocation:
+ *    - `_id` and `_task` are provided when called internally by a utility function.
+ *    - Used to determine the execution context and branch to the appropriate logic.
+ *
+ * @param {Object|undefined} [req]   Express request object. Provided when invoked from an Express endpoint.
+ * @param {Object|undefined} [res]   Express response object. Provided when invoked from an Express endpoint.
+ * @param {string|undefined} [_id]   Identifier used for internal utility execution and branching logic.
+ * @param {string|undefined} [_task] Task identifier or type used to determine the appropriate execution path.
+ *
+ * @returns {Promise<*>} Result of the execution, depending on the invocation context and task.
+ */
 
+export const newExec = async (options: execOptions) => {
+
+	// scenario assertions
+	switch(options.callerType) {
+		case 'ENDPOINT':
+			assert(options.req !== undefined, 'endpoint call requires req')
+			assert(options.res !== undefined, 'endpoint call requires res')
+			break;
+
+		case 'UTILITY':
+			assert(options._id !== undefined, 'utility call requires _id')
+			assert(options._task !== undefined, 'utility call requires _task')
+			break;
+	}	
+
+	if (options.verbose) logger.debug(`newExec passed scenario assertions!`);
+
+	try {
+		// persist
+		const exec_id = await generalInsert({
+			req: options.req,
+			type: TaskType.EXECUTION,
+			//
+			_id: options._id,
+			_task: options._task,
+		});
+
+		// execute
+		const response = await run({
+			id: exec_id, 
+			type: TaskType.EXECUTION
+		});
+		
+		if (options.verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
+		
+		switch(options.callerType) {
+			case 'ENDPOINT':
+				return options.res.status(200).send(response);
+
+			case 'UTILITY':
+				return response;
+		}
+		
 	} catch (e) {
 		logger.error(`something went wrong in newExec: ${e}`);
-		return res?.status(500).send(undefined);
+
+		switch(options.callerType) {
+			case 'ENDPOINT':
+				return options.res.status(500).json({error: 'something went wrong...'});
+			
+			case 'UTILITY':
+				throw e
+		}
+		
 	}
 };
 
@@ -456,19 +492,6 @@ export const newTask = async (req: Request, res: Response) => {
 	
 	return res.status(200).send(llm_response);
 };
-
-// export const _try = <T extends (...args: any[]) => any>(
-// 	func: T
-// ) => {
-// 	return (...args: Parameters<T>): ReturnType<T> | undefined => {
-// 		try {
-// 			return func(...args);
-// 		} catch (e) {
-// 			logger.error(`Something went wrong in ${func.name}: ${e}`);
-// 			return undefined;
-// 		}
-// 	};
-// };
 
 export const newJob = async (req: Request, res: Response) => {
 	const successful = await generalInsert({ req, type: TaskType.JOB });
