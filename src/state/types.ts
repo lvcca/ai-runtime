@@ -1,4 +1,5 @@
 import type { ValidatorResponse } from '../prompts/types/TaskValidator.js';
+import type { Request, Response } from 'express';
 
 export type PromptChain = {
 	userRequestChain?: string[];
@@ -75,3 +76,29 @@ export type StateTransaction = TransactionBase & {
 	/** The response returned by the validator after evaluating the result. */
 	validatorResponse?: ValidatorResponse;
 };
+
+export const execCommonCaller = {
+    ENDPOINT: 'ENDPOINT',
+    UTILITY: 'UTILITY',
+} as const;
+
+export type execCaller =
+    typeof execCommonCaller[keyof typeof execCommonCaller];
+
+export type execOptions =
+    | {
+        callerType: typeof execCommonCaller.ENDPOINT;
+        req: Request;
+        res: Response;
+        _id?: never;
+        _task?: never;
+        verbose?: boolean;
+    }
+    | {
+        callerType: typeof execCommonCaller.UTILITY;
+        _id: string;
+        _task: string;
+        req?: never;
+        res?: never;
+        verbose?: boolean;
+    };

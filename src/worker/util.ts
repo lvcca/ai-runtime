@@ -538,12 +538,10 @@ export const ToolExec = async ({
 	toolExecId,
 	task,
 	toolExecPayload,
-	currentTransaction
 }: {
 	toolExecId: string;
 	task: string;
 	toolExecPayload: string;
-	currentTransaction: StateTransaction
 }) => {
 	logger.debug(`ToolExec`);
 
