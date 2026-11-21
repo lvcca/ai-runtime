@@ -1,4 +1,4 @@
-import { redisDelete, redisGet, redisSet } from './state.ts';
+import { redisDelete, redisEntryExists, redisGet, redisSet } from './state.ts';
 import { getLogger } from '../logger/logger.ts';
 import { TaskType, type StateTransaction } from './types.ts';
 
@@ -116,3 +116,5 @@ export const deleteJobCommon = async (id: string) => {
 		throw new Error(`could not find entry in deleteJob: error: ${e}`);
 	}
 };
+
+export const stateTransactionExists = async (id: string) => await redisEntryExists(id);

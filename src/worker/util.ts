@@ -766,7 +766,7 @@ export type SummaryType = {
  * @param id
  * @returns
  */
-export const SummarizeLlmTransaction = async (id: string) => {
+export const summarizeExecTransaction = async (id: string) => {
 	const currObj = await redisGet<StateTransaction>(id);
 	const _obj = JSON.stringify(currObj);
 
