@@ -1,4 +1,5 @@
 import '@lvcca/ts-assert';
+import '@lvcca/ts-try'
 
 import { _env } from './env.ts';
 import { app, webServerPort } from './server/server.ts';

@@ -32,7 +32,7 @@ import {
 	type RelatedTransactionsChain,
 	Status,
 	TaskType,
-	type Transaction,
+	type StateTransaction,
 } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 
@@ -46,20 +46,27 @@ export const getHeader = (req: Request, header: string) => {
 };
 
 export const generalInsert = async ({
+	// remote caller
 	req,
 	type,
-	//
-	_id,
+
+	// local caller
+	_id, 
 	_task,
-	verbose = false,
-}: {
 	//
+	verbose = false,
+	sanityCheck = true
+}: {
+	// remote caller
 	req?: Request;
 	type?: TaskType;
-	//
+
+	// local caller
 	_id?: string;
 	_task?: string;
-	verbose?: false;
+	//
+	verbose?: boolean;
+	sanityCheck?: boolean
 }) => {
 	if (verbose) logger.debug(`in task insert`);
 
@@ -90,21 +97,18 @@ export const generalInsert = async ({
 
 	if (verbose) logger.debug(`exists: ${exists}`);
 
-	// if exists get existing entry
-	let existingEntry: Transaction | undefined;
-	if (exists) existingEntry = await redisGet<Transaction>(id);
-
 	// redis save obj
-	let _tx: Transaction | undefined;
+	let _tx: StateTransaction | undefined;
 
 	// if exists create new task with link to existing task
 	if (exists) {
+
+		const existingEntry: StateTransaction | undefined = await redisGet<StateTransaction>(id);
+
 		assert(!!existingEntry, 'existing entry cannot be undefined if it exists..')
 
 		const newId = randomUUID();
-
-		const prompt: PromptChain = existingEntry?.prompt ?? {};
-
+		const prompt: PromptChain = existingEntry.promptChain ?? {};
 		const existingResponse = prompt.llmResponseChain ?? [];
 		const userRequest = prompt.userRequestChain ?? [];
 
@@ -115,9 +119,9 @@ export const generalInsert = async ({
 			llmResponseChain: existingResponse,
 		};
 
-		let relatedTransactions: RelatedTransactionsChain = structuredClone(existingEntry?.related);
+		let relatedTransactions: RelatedTransactionsChain = structuredClone(existingEntry.related);
 
-		switch (existingEntry?.type) {
+		switch (existingEntry.type) {
 			case TaskType.SHELL_JOB:
 				if (relatedTransactions && !relatedTransactions?.shellJob) relatedTransactions.shellJob = [];
 				relatedTransactions?.shellJob?.push(id);
@@ -136,7 +140,7 @@ export const generalInsert = async ({
 				relatedTransactions?.task?.push(id);
 				break;
 			default:
-				if (verbose) logger.warn(`no case for type ${existingEntry?.type}`)
+				if (verbose) logger.warn(`no case for type ${existingEntry.type}`)
 		}
 
 		_tx = {
@@ -145,13 +149,14 @@ export const generalInsert = async ({
 				status: Status.QUEUED,
 			},
 			type,
-			prompt: newPrompt,
+			promptChain: newPrompt,
 			related: relatedTransactions,
 		};
 
 		// for return statement to be accurate
 		id = newId;
-		assert(id === _tx.id, 'sanity check failed id !== _tx.id');
+
+		if (sanityCheck) assert(id === _tx.id, 'sanity check failed id !== _tx.id');
 
 	} else {
 		// create new transaction
@@ -161,17 +166,17 @@ export const generalInsert = async ({
 				status: Status.QUEUED,
 			},
 			type: type,
-			prompt: {
+			promptChain: {
 				userRequestChain: [task],
 				llmResponseChain: [],
 			},
 		};
 	}
 
-	if (verbose)
+	if (verbose) {
 		logger.debug(`full saved exists transaction: ${JSON.stringify(_tx)}`);
-
-	if (verbose) logger.debug(`Incoming newTask: ${id}, type: ${type}`);
+		logger.debug(`Incoming newTask: ${id}, type: ${type}`);
+	}
 
 	switch (type) {
 		case TaskType.SHELL_JOB:
@@ -195,9 +200,9 @@ export const generalInsert = async ({
 };
 
 export const resolveRelated = async (related?: RelatedTransactionsChain) => {
-	let tasks: Transaction[] = [];
-	let execs: Transaction[] = [];
-	let jobs: Transaction[] = [];
+	let tasks: StateTransaction[] = [];
+	let execs: StateTransaction[] = [];
+	let jobs: StateTransaction[] = [];
 
 	let out = {
 		tasks,
@@ -234,14 +239,14 @@ export const ExecValidator = async ({id, verbose=false}:{id?: string, verbose?: 
 	if (verbose) logger.debug(`validating transaction: ${id}`);
 
 	assert(id, `validate requires a valid id... id: ${id}`)
-	const entry = await redisGet<Transaction>(id);
+	const entry = await redisGet<StateTransaction>(id);
 	assert(entry, `could not find valid entry: id: ${id}`)
 
 	if (verbose) logger.debug(`found entry: ${JSON.stringify(entry)}`);
 
-	const { result, prompt, related } = entry;
+	const { result, promptChain: prompt, related } = entry;
 
-	const task = entry.prompt?.userRequestChain;
+	const task = entry.promptChain?.userRequestChain;
 
 	let _result: string;
 
@@ -294,12 +299,12 @@ Output FORMAT:
 
 	if (verbose) logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
 
-	const incomingEntry: Transaction = {
+	const incomingEntry: StateTransaction = {
 		id, 
 		validatorResponse
 	}
 
-	await redisSet<Transaction>({incomingEntry});
+	await redisSet<StateTransaction>({incomingEntry});
 
 	return validatorResponse;
 };
@@ -307,10 +312,10 @@ Output FORMAT:
 export const run = async ({id, type}:{id: string, type: TaskType}) => {
 	let result: string = 'FAILED';
 
-	const currentTx = await redisGet<Transaction>(id);
+	const currentTx = await redisGet<StateTransaction>(id);
 
 	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
-	const userRequestChain = currentTx?.prompt?.userRequestChain;
+	const userRequestChain = currentTx?.promptChain?.userRequestChain;
 
 	assert(!!userRequestChain, 'user request chain unefined!')
 	assert(userRequestChain.length > 0, 'user request chain is empty!')
@@ -345,7 +350,10 @@ const getExecManagerNextAction = async (
 	switch (managerResponse.next_action?.type) {
 		case 'terminate':
 		case 'noop':
+			// what do we do if manager recommends noop or terminate
+			// what other potential states are we missing?
 			break;
+
 		case 'retry':
 			const prompt = managerResponse.next_action.prompt;
 
@@ -357,6 +365,7 @@ const getExecManagerNextAction = async (
 			// next actions here
 
 			success = true;
+			break;
 	}
 
 	return success;
@@ -377,7 +386,7 @@ export const newExecCommon = async ({
 	verbose?: boolean;
 }) => {
 	try {
-		//
+		// persist
 		const exec_id = await generalInsert({
 			req,
 			type: TaskType.EXECUTION,
@@ -386,17 +395,15 @@ export const newExecCommon = async ({
 			_task,
 		});
 
+		// execute
 		const llm_response = await run({
 			id: exec_id, 
 			type: TaskType.EXECUTION
 		});
 
+		// analysis and plan branching
 		const validatorResponse = await ExecValidator({id: exec_id});
-
-		//
 		const summary = await SummarizeLlmTransaction(exec_id);
-		//
-
 		const execManagementResults = await ManageExecutionResults(exec_id);
 
 		if (
@@ -445,6 +452,19 @@ export const newTask = async (req: Request, res: Response) => {
 	
 	return res.status(200).send(llm_response);
 };
+
+// export const _try = <T extends (...args: any[]) => any>(
+// 	func: T
+// ) => {
+// 	return (...args: Parameters<T>): ReturnType<T> | undefined => {
+// 		try {
+// 			return func(...args);
+// 		} catch (e) {
+// 			logger.error(`Something went wrong in ${func.name}: ${e}`);
+// 			return undefined;
+// 		}
+// 	};
+// };
 
 export const newJob = async (req: Request, res: Response) => {
 	const successful = await generalInsert({ req, type: TaskType.JOB });

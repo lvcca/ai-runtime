@@ -14,28 +14,28 @@ import {
 } from './util.ts';
 
 // all incoming traffic
-app.use(validateIncomingTraffic);
+app.use(_try(validateIncomingTraffic));
 
 // all apis
 app.get('/', (_, res) => res.status(200).send(`Hello world! ${new Date()}`));
 
-// Tasks
-app.get(['/task/', '/task/allTasks'], allTasks);
-app.get('/task/newTaskDirect', newTaskDirect);
-app.get('/task/newTask', newTask);
-app.get('/task/delete', deleteTask);
+// Tasks, general purpose task
+app.get(['/task/', '/task/allTasks'], _try(allTasks));
+app.get('/task/newTaskDirect', _try(newTaskDirect));
+app.get('/task/newTask', _try(newTask));
+app.get('/task/delete', _try(deleteTask));
 
-// Execs
-app.get(['/exec/', '/exec/allExecs'], allExec);
-app.get('/exec/newExec', newExecCommon);
-app.get('/exec/deleteExec', deleteExec);
+// Execs, general purpose execution
+app.get(['/exec/', '/exec/allExecs'], _try(allExec));
+app.get('/exec/newExec', _try(newExecCommon));
+app.get('/exec/deleteExec', _try(deleteExec));
 
-// Jobs
-app.get(['/job/', '/job/allJobs'], allJobs);
-app.get('/job/newJob', newJob);
-app.get('/job/deleteJob', deleteJob);
+// Jobs, general purpose job / service
+app.get(['/job/', '/job/allJobs'], _try(allJobs));
+app.get('/job/newJob', _try(newJob));
+app.get('/job/deleteJob', _try(deleteJob));
 
-// Shell Jobs
+// Shell Jobs, general purpose os shell jobs
 app.get(['/shelljob/', '/shelljob/allJobs']);
 app.get('/shelljob/newJob');
 app.get('/shelljob/deleteJob');

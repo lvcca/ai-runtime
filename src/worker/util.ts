@@ -18,7 +18,7 @@ import {
 	type RelatedTransactionsChain,
 	type _Status,
 	TaskType,
-	type Transaction,
+	type StateTransaction,
 	Status,
 } from '../state/types.ts';
 import {
@@ -91,7 +91,7 @@ export const updateRelated = async ({
 
 	try {
 		// get current state
-		let currEntry: Transaction | undefined;
+		let currEntry: StateTransaction | undefined;
 
 		switch (type) {
 			case TaskType.EXECUTION:
@@ -160,7 +160,7 @@ export const appendToTransactionLog = async ({
 }) => {
 	let success = false;
 	try {
-		let currTx: Transaction | undefined;
+		let currTx: StateTransaction | undefined;
 
 		switch (type) {
 			case TaskType.TASK_DIRECT:
@@ -186,30 +186,31 @@ export const appendToTransactionLog = async ({
 
 		assert(!!currTx, `no tx found!`)
 		
-		const currentReq = structuredClone([
-			...(currTx?.prompt?.userRequestChain ?? []),
+		const newUserReqChain = structuredClone([
+			...(currTx?.promptChain?.userRequestChain ?? []),
 		]);
-		const currentRes = structuredClone([
-			...(currTx?.prompt?.llmResponseChain ?? []),
+		const newLLMResponseChain = structuredClone([
+			...(currTx?.promptChain?.llmResponseChain ?? []),
 		]);
 
-		if (newUserRequest && !currentReq.includes(newUserRequest))
-			currentReq.push(newUserRequest);
-		if (newLLMResponse && !currentRes.includes(newLLMResponse))
-			currentRes.push(newLLMResponse);
-
-		const newPrompt: PromptChain = {
-			userRequestChain: currentReq,
-			llmResponseChain: currentRes,
+		if (newUserRequest && !newUserReqChain.includes(newUserRequest))
+			newUserReqChain.push(newUserRequest);
+		if (newLLMResponse && !newLLMResponseChain.includes(newLLMResponse))
+			newLLMResponseChain.push(newLLMResponse);
+		
+		const newPromptChain: PromptChain = {
+			userRequestChain: newUserReqChain,
+			llmResponseChain: newLLMResponseChain,
 		};
 
-		const _tx: Transaction = {
+		const _tx: StateTransaction = {
 			id: _id,
 			status: currTx?.status,
-			prompt: newPrompt,
+			promptChain: newPromptChain,
 			type: currTx?.type,
 		};
 
+		// persist 
 		switch (type) {
 			case TaskType.SHELL_JOB:
 				success = await setShellJob(_tx);
@@ -228,6 +229,7 @@ export const appendToTransactionLog = async ({
 				logger.warn(`no case for type: ${type}`);
 				break;
 		}
+
 	} catch (e) {
 		logger.error(
 			`something went wrong in appendToTransactionLog: ${getError(e)}`,
@@ -521,16 +523,21 @@ export const ToolExec = async ({
 	toolExecId,
 	task,
 	toolExecPayload,
+	currentTransaction
 }: {
 	toolExecId: string;
 	task: string;
 	toolExecPayload: string;
+	currentTransaction: StateTransaction
 }) => {
 	logger.debug(`ToolExec`);
 
 	await setExec({
 		id: toolExecId,
-		status: { status: Status.RUNNING, message: 'Tool Exec' },
+		status: { 
+			status: Status.RUNNING, 
+			message: 'Tool Exec' 
+		},
 		type: TaskType.EXECUTION,
 	});
 
@@ -747,7 +754,7 @@ export type SummaryType = {
  * @returns
  */
 export const SummarizeLlmTransaction = async (id: string) => {
-	const currObj = await redisGet<Transaction>(id);
+	const currObj = await redisGet<StateTransaction>(id);
 	const _obj = JSON.stringify(currObj);
 
 	const summarizedTask = await call_llm_task_summarizer(`
@@ -756,13 +763,13 @@ You are an ai task result summarizer.
 Your job is to parse results and determine a definitive next step is required.
 
 Initial Tasks:
-${currObj?.prompt?.userRequestChain}
+${currObj?.promptChain?.userRequestChain}
 
 Task Results:
 ${currObj?.result}
 
 Full Task Stringified Object:
-${JSON.stringify(JSON.parse(_obj) as Transaction, null, 2)}
+${JSON.stringify(JSON.parse(_obj) as StateTransaction, null, 2)}
 
 RULES:
 - Return ONLY valid JSON

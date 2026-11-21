@@ -1,10 +1,10 @@
 import { call_llm_toolcall, PROMPTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import {
-	type RelatedTransactionsChain,
 	type _Status,
 	TaskType,
 	Status,
+	type StateTransaction,
 } from '../state/types.ts';
 import { getExec, setExec } from '../state/util.ts';
 import { toolRegistry } from '../tools/ToolRegistry.ts';
@@ -15,7 +15,7 @@ const logger = getLogger('ExecutionWorker');
 
 export const GetToolExecPayload = async (
 	task: string,
-	related: RelatedTransactionsChain,
+	currObj: StateTransaction
 ) =>
 	await call_llm_toolcall(`
 You are an System Execution agent.
@@ -32,8 +32,14 @@ ${PROMPTS['tool_types']}
 TASK:
 ${task}
 
-Related Tasks:
-${JSON.stringify(related)}
+Current Transaction status:
+${JSON.stringify(currObj.status)}
+
+Current Transaction related Tasks:
+${JSON.stringify(currObj.related)}
+
+Current Transaction full promptChain:
+${JSON.stringify(currObj.promptChain)}
 
 RULES:
 - Use ONLY valid JSON as output 
@@ -48,19 +54,19 @@ ToolCallPayload`);
 
 export const RunExec = async (exec_id: string, userRequest: string) => {
 	logger.debug(`RunExec, id: ${exec_id}, task: ${userRequest}`);
+	
 	// set status
 	await setExec({
 		id: exec_id,
 		status: { status: Status.RUNNING },
 	});
 
-	let related: RelatedTransactionsChain | undefined;
-	const currObj = await getExec(exec_id);
-	related = currObj?.related;
+	const currEntry: StateTransaction = await getExec(exec_id);
+	
 	let finalOutput: string = 'FAILED';
 
 	try {
-		let toolExecPayload = await GetToolExecPayload(userRequest, related);
+		let toolExecPayload = await GetToolExecPayload(userRequest, currEntry);
 
 		await appendToTransactionLog({
 			_id: exec_id,
@@ -74,6 +80,7 @@ export const RunExec = async (exec_id: string, userRequest: string) => {
 			toolExecId,
 			task: userRequest,
 			toolExecPayload,
+			currentTransaction: currEntry
 		});
 
 		// execution result
