@@ -12,18 +12,19 @@ import {
 	setJob,
 	setShellJob,
 	setTask,
+	stateTransactionExists,
 } from '../state/util.ts';
 import { randomUUID } from 'node:crypto';
 import { call_llm_task_validator } from '../llm.ts';
 import {
 	extractResponseBlock,
 	parseJsonSafe,
-	SummarizeLlmTransaction,
+	summarizeExecTransaction,
 } from '../worker/util.ts';
 import { runTask } from '../worker/TaskWorker.ts';
 import { runExec } from '../worker/ExecutionWorker.ts';
 import {
-	ManageExecutionResults,
+	manageExecutionResults,
 	type TransactionManagerResponse,
 } from '../service/TransactionManager.ts';
 import type { ValidatorResponse } from '../prompts/types/TaskValidator.js';
@@ -46,6 +47,11 @@ export const getHeader = (req: Request, header: string) => {
 	else return _header;
 };
 
+/**
+ * general state insert, existing entries are chained to new ones
+ * @param param0 
+ * @returns {string} id inserted object
+ */
 export const generalInsert = async ({
 	// remote caller
 	req,
@@ -92,20 +98,17 @@ export const generalInsert = async ({
 		task = getHeader(req, 'task');
 	}
 
-	assert(id !== undefined && task !== undefined, 'malformed call to generalInsert...');
+	assert(id !== undefined && task !== undefined, 'malformed call to generalInsert...');	
 	
-	const exists = await redisEntryExists(id);
-
-	if (verbose) logger.debug(`exists: ${exists}`);
-
 	// redis save obj
 	let _tx: StateTransaction | undefined;
 
 	// if exists create new task with link to existing task
-	if (exists) {
+	// transction chain append
+	if (await stateTransactionExists(id)) {
+		if (verbose) logger.debug(`entry exists`);
 
 		const existingEntry: StateTransaction | undefined = await redisGet<StateTransaction>(id);
-
 		assert(!!existingEntry, 'existing entry cannot be undefined if it exists..')
 
 		const newId = randomUUID();
@@ -120,26 +123,25 @@ export const generalInsert = async ({
 			llmResponseChain: existingResponse,
 		};
 
-		let relatedTransactions: RelatedTransactionsChain = structuredClone(existingEntry.related);
+		let relatedTransactions: RelatedTransactionsChain = structuredClone(existingEntry.related ?? {});
+		assert(!!relatedTransactions, 'related transactions object should not be undefined')
 
+		// attach self as related transaction
 		switch (existingEntry.type) {
 			case TaskType.SHELL_JOB:
-				if (relatedTransactions && !relatedTransactions?.shellJob) relatedTransactions.shellJob = [];
-				relatedTransactions?.shellJob?.push(id);
+				(relatedTransactions.shellJob ??= []).push(id);
 				break;
 			case TaskType.EXECUTION:
-				if (relatedTransactions && !relatedTransactions?.exec) relatedTransactions.exec = [];
-				relatedTransactions?.exec?.push(id);
+				(relatedTransactions.exec ??= []).push(id);
 				break;
 			case TaskType.JOB:
-				if (relatedTransactions && !relatedTransactions.job) relatedTransactions.job = [];
-				relatedTransactions?.job?.push(id);
+				(relatedTransactions.job ??= []).push(id);
 				break;
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
-				if (relatedTransactions && !relatedTransactions.task) relatedTransactions.task = [];
-				relatedTransactions?.task?.push(id);
+				(relatedTransactions.task ??= []).push(id);
 				break;
+				
 			default:
 				if (verbose) logger.warn(`no case for type ${existingEntry.type}`)
 		}
@@ -156,11 +158,9 @@ export const generalInsert = async ({
 
 		// for return statement to be accurate
 		id = newId;
-
 		if (sanityCheck) assert(id === _tx.id, 'sanity check failed id !== _tx.id');
-
 	} else {
-		// create new transaction
+		// create new transaction chain
 		_tx = {
 			id,
 			status: {
@@ -172,6 +172,8 @@ export const generalInsert = async ({
 				llmResponseChain: [],
 			},
 		};
+
+		if (verbose) logger.debug(`_tx: ${JSON.stringify(_tx)}`);
 	}
 
 	if (verbose) {
@@ -236,22 +238,19 @@ export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 	return out;
 };
 
-export const ExecValidator = async ({id, verbose=false}:{id?: string, verbose?: boolean}) => {
+export const executionValidator = async ({id, verbose=false}:{id?: string, verbose?: boolean}) => {
 	if (verbose) logger.debug(`validating transaction: ${id}`);
-
 	assert(id, `validate requires a valid id... id: ${id}`)
 	const entry = await redisGet<StateTransaction>(id);
 	assert(entry, `could not find valid entry: id: ${id}`)
-
 	if (verbose) logger.debug(`found entry: ${JSON.stringify(entry)}`);
 
-	const { result, promptChain: prompt, related } = entry;
-
-	const task = entry.promptChain?.userRequestChain;
-
+	const { result, promptChain, related }: StateTransaction = entry;
+	
+	const task = promptChain?.userRequestChain;
 	let _result: string;
 
-	if (verbose) logger.debug(`res: ${result}, prompt: ${JSON.stringify(prompt)}`);
+	if (verbose) logger.debug(`validating state transaction result: ${result}, from promptChain: ${JSON.stringify(promptChain)}`);
 
 	_result = await call_llm_task_validator(`
 You are an Execution agent manager.
@@ -268,7 +267,7 @@ Related Tasks:
 ${JSON.stringify(await resolveRelated(related))}
 
 LLM Prompt History:
-${JSON.stringify(prompt)}
+${JSON.stringify(promptChain)}
 
 RULES:
 - Use ONLY valid JSON as output 
@@ -287,25 +286,28 @@ Output FORMAT:
 		"issues": string[],
 		"evidence": string[]
 }
-</LLM_RESPONSE>
-	`);
+</LLM_RESPONSE>`);
 
 	if (verbose) logger.debug(`Task Validator Result: ${_result}`);
 
-	const responseBlock = await extractResponseBlock(_result);
-	if (!responseBlock)
-		throw new Error(`invalid response from validator: ${responseBlock}`);
-
+	const responseBlock: unknown = await extractResponseBlock(_result);
+	assert(responseBlock !== undefined, 'validator returned undefined');
+	assert(!!responseBlock, 'validator returned an empty response');
+	assert(typeof responseBlock === 'string', 'validator should return a string');
+	assert(!(responseBlock as any instanceof Error), 'validator returned an Error object');
+	
+	// get valid object from string
 	const validatorResponse = parseJsonSafe<ValidatorResponse>(responseBlock);
 
 	if (verbose) logger.debug(`validator response: ${JSON.stringify(validatorResponse)}`);
-
-	const incomingEntry: StateTransaction = {
+	
+	// save valid object from string
+	const updatedTransaction: StateTransaction = {
 		id, 
 		validatorResponse
 	}
 
-	await redisSet<StateTransaction>({incomingEntry});
+	await setExec(updatedTransaction);
 
 	return validatorResponse;
 };
@@ -380,9 +382,9 @@ const manageExecResults = async (
 	) => {
 		// analysis and plan branching
 		// this should be seperate function to help keep newExec similar to newTask
-		const validatorResponse = await ExecValidator({id: exec_id});
-		const summary = await SummarizeLlmTransaction(exec_id);
-		const execManagementResults = await ManageExecutionResults(exec_id);
+		const validatorResponse = await executionValidator({id: exec_id});
+		const summary = await summarizeExecTransaction(exec_id);
+		const execManagementResults = await manageExecutionResults(exec_id);
 
 		if (
 			execManagementResults.next_action &&
