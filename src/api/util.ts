@@ -167,7 +167,7 @@ export const generalInsert = async ({
 			status: {
 				status: Status.QUEUED,
 			},
-			type: type,
+			type,
 			promptChain: {
 				userRequestChain: [task],
 				llmResponseChain: [],
