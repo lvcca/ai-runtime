@@ -6,9 +6,6 @@ import path from 'node:path';
 
 const logger = getLogger('llm');
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { GetPlan } from './worker/Planner.ts'; // just here for doc ref, @TODO fix me pls
-
 const LLM_MODEL = {
 	LLAMA_3_1: 'llama3.1',
 	QWEN3_CODER: 'qwen3-coder:latest',
@@ -243,7 +240,7 @@ export const call_llm_chat = async (prompt: string) => {
 };
 
 /**
- * used in {@link GetPlan}
+ * used in {@link GetPlan} {@link RevisePlan} {@link runTask} {@link RunShellTask}
  * @param prompt
  * @returns
  */
@@ -254,6 +251,11 @@ export const call_llm_tasks = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link GetToolExecPayload}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_toolcall = async (prompt: string) => {
 	const withContext = PROMPTS['execution'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -261,6 +263,11 @@ export const call_llm_toolcall = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link ToolExec}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_data_narrower = async (prompt: string) => {
 	const withContext = PROMPTS['tool_narrower'] + PROMPTS['tool_types'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -268,6 +275,11 @@ export const call_llm_data_narrower = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * unused
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_shell_executor = async (prompt: string) => {
 	const withContext = PROMPTS['shell_executor'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -275,6 +287,11 @@ export const call_llm_shell_executor = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * unused
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_shell_results_analyzer = async (prompt: string) => {
 	const withContext = PROMPTS['shell_results_analyzer'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -282,6 +299,11 @@ export const call_llm_shell_results_analyzer = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link GetSecondOpinion} {@link AnalyzeShellResults}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_shell_branch_analyzer = async (prompt: string) => {
 	const withContext =
 		PROMPTS['shell_executor_branch_analyst'] +
@@ -292,13 +314,22 @@ export const call_llm_shell_branch_analyzer = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link SimplifyOpinion}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_shell_branch_simplifier = async (prompt: string) => {
 	const withContext = PROMPTS['shell_executor_branch_analyst'] + prompt;
 	const res = await ollamaGenerate(withContext);
 	assert(res !== undefined, `did not receive response from llm: ${res}`)
 	return res;
 };
-
+/**
+ * used in {@link executionValidator}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_task_validator = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_validator'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -306,6 +337,11 @@ export const call_llm_task_validator = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * unused
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_task_result_junction_manager = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_junction_manager'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -313,6 +349,11 @@ export const call_llm_task_result_junction_manager = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link summarizeExecTransaction}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_task_summarizer = async (prompt: string) => {
 	const withContext = PROMPTS['task_result_summarizer'] + prompt;
 	const res = await ollamaGenerate(withContext);
@@ -320,6 +361,11 @@ export const call_llm_task_summarizer = async (prompt: string) => {
 	return res;
 };
 
+/**
+ * used in {@link manageExecutionResults}
+ * @param prompt 
+ * @returns 
+ */
 export const call_llm_task_transaction_manager = async (prompt: string) => {
 	const withContext = PROMPTS['task_transaction_manager'] + prompt;
 	const res = await ollamaGenerate(withContext);

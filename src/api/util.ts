@@ -330,7 +330,7 @@ export const run = async ({id, type}:{id: string, type: TaskType}) => {
 	const userRequestChain = _tx?.promptChain?.userRequestChain;
 	assert(!!userRequestChain, 'user request chain undefined!')
 	assert(userRequestChain.length > 0, 'user request chain is empty!')
-	const latestRequest = userRequestChain[0];
+	const latestRequest = userRequestChain[userRequestChain.length - 1];
 
 	switch (type) {
 		case TaskType.TASK_DIRECT:
@@ -439,13 +439,13 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 	// scenario assertions
 	switch(options.callerType) {
 		case ExecCallerType.ENDPOINT:
-			assert(options.req !== undefined, 'endpoint call requires req')
-			assert(options.res !== undefined, 'endpoint call requires res')
+			assert(options.req !== undefined, 'endpoint call requires req');
+			assert(options.res !== undefined, 'endpoint call requires res');
 			break;
 
 		case ExecCallerType.UTILITY:
-			assert(options._id !== undefined, 'utility call requires _id')
-			assert(options._task !== undefined, 'utility call requires _task')
+			assert(options._id !== undefined, 'utility call requires _id');
+			assert(options._task !== undefined, 'utility call requires _task');
 			break;
 	}	
 
@@ -467,8 +467,8 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 			type: TaskType.EXECUTION
 		});
 
-		assert(typeof response === 'string', 'response should be a string!')
-		assert(response.length > 0, 'response should not be empty!')
+		assert(typeof response === 'string', 'response should be a string!');
+		assert(response.length > 0, 'response should not be empty!');
 		// @TODO post execution stuffs
 		
 	} catch (e) {
