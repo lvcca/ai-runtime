@@ -27,9 +27,9 @@ export const runTask = async (
 		status: { status: Status.RUNNING },
 	});
 
-	let final_output = '';
-	let plan = '';
-	let revised_plan = '';
+	let final_output: string | undefined;
+	let plan: string | undefined;
+	let revised_plan: string | undefined;
 	let status: _Status = Status.FAILED; // assume failed
 
 	try {

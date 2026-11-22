@@ -25,7 +25,7 @@ export const TaskType = {
 	TASK_DIRECT: 'TASK_DIRECT', // for direct llm query, no fancy tool or runtime stuffs
 	TASK: 'TASK',
 	EXECUTION: 'EXECUTION',
-	JOB: 'JOB',
+	TOOL_JOB: 'TOOL_JOB',
 	SHELL_JOB: 'SHELL_JOB',
 } as const;
 
@@ -33,9 +33,9 @@ export type TaskType = (typeof TaskType)[keyof typeof TaskType];
 
 export type RelatedTransactionsChain =
 	| {
-			job?: string[];
 			task?: string[];
 			exec?: string[];
+			toolJob?: string[];
 			shellJob?: string[];
 	  }
 	| undefined;

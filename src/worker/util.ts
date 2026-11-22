@@ -108,11 +108,11 @@ export const updateRelated = async ({
 		if (!_tx) throw new Error(`could not find entry... ${_id}`);
 
 		// update current state
-		const newJobs = related?.job;
+		const newJobs = related?.toolJob;
 		if (newJobs)
 			for (let i = 0; i < newJobs?.length; i++)
-				if (!_tx.related?.job?.includes(newJobs[i]))
-					_tx.related?.job?.push(newJobs[i]);
+				if (!_tx.related?.toolJob?.includes(newJobs[i]))
+					_tx.related?.toolJob?.push(newJobs[i]);
 
 		const newExecs = related?.exec;
 		if (newExecs)
@@ -146,6 +146,7 @@ export const appendToTransactionLog = async ({
 	//
 	newUserRequest?: string;
 	newLLMResponse?: string;
+	//
 }) => {
 	let success = false;
 	try {
@@ -199,7 +200,7 @@ export const getStateCommon = async (
 		case TaskType.SHELL_JOB:
 			_tx = await getShellJob(_id);
 			break;
-		case TaskType.JOB:
+		case TaskType.TOOL_JOB:
 			_tx = await getJob(_id);
 			break;
 		case TaskType.TASK_DIRECT:
@@ -220,13 +221,14 @@ export const setStateCommon = async (
 	{_tx, type} : 
 	{_tx: StateTransaction, type: TaskType}
 	) => {
+
 	let success = false
 	
 	switch (type) {
 		case TaskType.SHELL_JOB:
 			success = await setShellJob(_tx);
 			break;
-		case TaskType.JOB:
+		case TaskType.TOOL_JOB:
 			success = await setJob(_tx);
 			break;
 		case TaskType.TASK_DIRECT:
@@ -246,20 +248,21 @@ export const setStateCommon = async (
 }
 
 export const execWrapper = async (func: _func, args: string[]) => {
-	let result: string;
+	let result: string | undefined;
 
 	try {
 		result = await func(...args);
-		if (result === undefined)
+		if (result === undefined) {
 			result = `${func.name} call returned undefined, assume successful execution`;
+		}
 	} catch (e) {
-		const msg = `something went wrong in execWrapper: ${getError(e)}`;
-		logger.error(msg);
-		result = msg;
+		logger.error(`something went wrong in execWrapper: ${getError(e)}`);
 	}
 
 	return result;
 };
+
+
 /**
  *
  * @param key : job id
@@ -272,42 +275,45 @@ const safeExecute = async (
 	key: string,
 	tool: RegisteredToolEntry,
 	Params: Parameter[],
+	verbose?: boolean,
 ) => {
 	if (!tool.func)
 		throw new Error(
 			`something went wrong in SafeExecute, tool: ${JSON.stringify(tool)} `,
 		);
 
-	let validResult: string = 'FAILED';
-	let result: unknown = validResult;
+	let safeResult: string | undefined;
+	let tmpExecResult: unknown = safeResult;
 
 	await setJob({
 		id: key,
-		status: { status: Status.RUNNING, message: 'In safe Execute' },
+		status: { 
+			status: Status.RUNNING, 
+			message: 'In safe Execute' 
+		},
 	});
 
 	try {
 		const func = tool.func;
 		const params = Params.map((p) => p.value);
 
-		logger.info(`func: ${func.name}, params: ${JSON.stringify(params)}`);
+		if (verbose) logger.info(`func: ${func.name}, params: ${JSON.stringify(params)}`);
 
-		// result = await func(...params);
-		result = await execWrapper(func, params);
+		tmpExecResult = await execWrapper(func, params);
 
-		logger.info(`func results: ${JSON.stringify(result)}`);
+		if (verbose) logger.info(`func results: ${JSON.stringify(tmpExecResult)}`);
 
 		switch (true) {
-			case result === undefined:
-			case result === null:
+			case tmpExecResult === undefined:
+			case tmpExecResult === null:
 				throw new Error(`no result returned from func call in SafeExecute`);
 
-			case typeof result === 'string':
-				validResult = result;
+			case typeof tmpExecResult === 'string':
+				safeResult = tmpExecResult;
 				break;
 
-			case typeof result === 'object': {
-				const _result: StandardStreams = result as StandardStreams;
+			case typeof tmpExecResult === 'object': {
+				const _result: StandardStreams = tmpExecResult as StandardStreams;
 
 				if (!_result.input) break;
 
@@ -315,9 +321,9 @@ const safeExecute = async (
 
 				// get arrays
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const keys = Object.keys(result as any);
+				const keys = Object.keys(tmpExecResult as any);
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const vals = Object.values(result as any);
+				const vals = Object.values(tmpExecResult as any);
 
 				// find keys
 				const output = keys.findIndex((k) => k === 'output');
@@ -330,21 +336,21 @@ const safeExecute = async (
 					const _output = `${vals[output]}` as string;
 					const _error = `${vals[error]}` as string;
 
-					validResult =
+					safeResult =
 						_output ||
 						_error ||
 						_input ||
 						'[*] no response from shell, assume exited successfully'; // placeholder failsafe
 
-					logger.warn(`validResult: ${validResult}`);
+					logger.warn(`validResult: ${safeResult}`);
 				}
 				break;
 			}
 
 			default:
-				validResult = `${result}`;
+				safeResult = `${tmpExecResult}`;
 				logger.warn(
-					`no case found for result ${JSON.stringify(result)}, result type: ${typeof result}`,
+					`no case found for result ${JSON.stringify(tmpExecResult)}, result type: ${typeof tmpExecResult}`,
 				);
 		}
 
@@ -357,10 +363,10 @@ const safeExecute = async (
 		});
 
 		logger.info(
-			`[*] SafeExecute result: ${JSON.stringify(result)}, validResult: ${validResult}`,
+			`[*] SafeExecute result: ${JSON.stringify(tmpExecResult)}, validResult: ${safeResult}`,
 		);
 
-		return validResult;
+		return safeResult;
 	} catch (e) {
 		const msg = `something went wrong in SafeExecute: ${JSON.stringify(getError(e))}, tool: ${JSON.stringify(tool)}, Params: ${JSON.stringify(Params)}`;
 
@@ -372,7 +378,7 @@ const safeExecute = async (
 		logger.error(msg);
 	}
 
-	return validResult;
+	return safeResult;
 };
 
 export const getError = (e: unknown) => {
@@ -386,7 +392,7 @@ const AddJob = async (id: string, job_id: string) => {
 
 	const entry = await getExec(id);
 	const related = entry?.related;
-	const jobs = related?.job ?? [];
+	const jobs = related?.toolJob ?? [];
 
 	// save job id in parent
 	jobs?.push(job_id);
@@ -395,7 +401,7 @@ const AddJob = async (id: string, job_id: string) => {
 		case TaskType.EXECUTION:
 			saved = await setExec({
 				...entry,
-				related: { ...related, job: jobs },
+				related: { ...related, toolJob: jobs },
 			});
 			break;
 		default:
@@ -441,7 +447,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 				// redis entry
 				const jobSuccessful = await setJob({
 					id: _id,
-					type: TaskType.JOB,
+					type: TaskType.TOOL_JOB,
 					status: { status: Status.QUEUED },
 					related: { exec: [exec_id] }, //<- @TODO audit array assignment, potential overwrite of previous data
 					job: JSON.stringify(step),
@@ -483,14 +489,14 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 					);
 
 				const result = await safeExecute(_id, foundToolEntry, params);
-
+				assert(result !== undefined,)
 				if (!result) throw new Error(`no result came back from SafeExecute...`);
 
 				final_results = result;
 
 				await setJob({
 					id: _id,
-					type: TaskType.JOB,
+					type: TaskType.TOOL_JOB,
 					status: { status: Status.COMPLETED },
 					job: JSON.stringify(step),
 					result: final_results,
@@ -502,7 +508,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 
 				await setJob({
 					id: _id,
-					type: TaskType.JOB,
+					type: TaskType.TOOL_JOB,
 					status: { status: Status.FAILED },
 					related: { exec: [exec_id] },
 					job: JSON.stringify(step),
