@@ -1,4 +1,5 @@
 import { app } from '../server/server.ts';
+import { ExecCallerType } from '../state/types.ts';
 import {
 	newExec,
 	newTaskDirect,
@@ -27,7 +28,7 @@ app.get('/task/delete', _try(deleteTask));
 
 // Execs, general purpose execution
 app.get(['/exec/', '/exec/allExecs'], _try(allExec));
-app.get('/exec/newExec', _try(async (req, res) => await newExec({res, req, callerType: 'ENDPOINT'})));
+app.get('/exec/newExec', _try(async (req, res) => await newExec({res, req, callerType: ExecCallerType.ENDPOINT})));
 app.get('/exec/deleteExec', _try(deleteExec));
 
 // Jobs, general purpose job / service
