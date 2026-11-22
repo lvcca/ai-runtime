@@ -63,7 +63,7 @@ export const runExec = async (exec_id: string, userRequest: string, ) => {
 
 	const currEntry: StateTransaction = await getExec(exec_id);
 	
-	let finalOutput: string = 'FAILED';
+	let finalOutput: string | undefined;
 
 	try {
 

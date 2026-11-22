@@ -25,7 +25,6 @@ import { runTask } from '../worker/TaskWorker.ts';
 import { runExec } from '../worker/ExecutionWorker.ts';
 import {
 	manageExecutionResults,
-	type TransactionManagerResponse,
 } from '../service/TransactionManager.ts';
 import type { ValidatorResponse } from '../prompts/types/ValidatorResponse.js';
 import {
@@ -38,6 +37,7 @@ import {
 	ExecCallerType,
 } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
+import type { TransactionManagerResponse } from '../prompts/types/TransactionManagerResponse.js';
 
 const logger = getLogger('api_util');
 
@@ -135,8 +135,8 @@ export const generalInsert = async ({
 			case TaskType.EXECUTION:
 				(relatedTransactions.exec ??= []).push(id);
 				break;
-			case TaskType.JOB:
-				(relatedTransactions.job ??= []).push(id);
+			case TaskType.TOOL_JOB:
+				(relatedTransactions.toolJob ??= []).push(id);
 				break;
 			case TaskType.TASK_DIRECT:
 			case TaskType.TASK:
@@ -198,7 +198,7 @@ export const stateTransactionSet = async (_tx: StateTransaction) => {
 		case TaskType.EXECUTION:
 			successful = await setExec(_tx);
 			break;
-		case TaskType.JOB:
+		case TaskType.TOOL_JOB:
 			successful = await setJob(_tx);
 			break;
 		case TaskType.TASK_DIRECT:
@@ -222,7 +222,7 @@ export const resolveRelated = async (related?: RelatedTransactionsChain) => {
 
 	if (!related) return out;
 
-	const { task, exec, job } = related;
+	const { task, exec, toolJob: job } = related;
 
 	if (task)
 		for (const t of task) {
@@ -322,16 +322,14 @@ ${getTypeFromFile({file: 'ValidatorResponse.d.ts'})}
 };
 
 export const run = async ({id, type}:{id: string, type: TaskType}) => {
-	let result: string = 'FAILED';
+	let result: string | undefined;
 
-	const currentTx = await redisGet<StateTransaction>(id);
+	const _tx = await redisGet<StateTransaction>(id);
 
-	const taskDirect = currentTx?.type === TaskType.TASK_DIRECT;
-	const userRequestChain = currentTx?.promptChain?.userRequestChain;
-
+	const taskDirect = _tx?.type === TaskType.TASK_DIRECT;
+	const userRequestChain = _tx?.promptChain?.userRequestChain;
 	assert(!!userRequestChain, 'user request chain undefined!')
 	assert(userRequestChain.length > 0, 'user request chain is empty!')
-
 	const latestRequest = userRequestChain[0];
 
 	switch (type) {
@@ -370,12 +368,15 @@ const getExecManagerNextAction = async (
 		case 'retry':
 			const prompt = managerResponse.next_action.prompt;
 
-			// START HERE
 			await newExec({
 				_id: exec_id,
 				_task: prompt,
-				callerType: 'UTILITY'
+				callerType: ExecCallerType.UTILITY
 			});
+
+			/**
+			 *	// START HERE 
+			 */
 
 			// next actions here
 			success = true;
@@ -433,6 +434,7 @@ export const manageExecResults = async (
  */
 
 export const newExec = async (options: execOptions): Promise<string | Response> => {
+	let response: string | undefined;
 
 	// scenario assertions
 	switch(options.callerType) {
@@ -460,22 +462,14 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 		});
 
 		// execute
-		const response = await run({
+		response = await run({
 			id: exec_id, 
 			type: TaskType.EXECUTION
 		});
 
-		// post execution stuffs
-		
-		if (options.verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
-		
-		switch(options.callerType) {
-			case ExecCallerType.ENDPOINT:
-				return options.res.status(200).send(response);
-
-			case ExecCallerType.UTILITY:
-				return response;
-		}
+		assert(typeof response === 'string', 'response should be a string!')
+		assert(response.length > 0, 'response should not be empty!')
+		// @TODO post execution stuffs
 		
 	} catch (e) {
 		logger.error(`something went wrong in newExec: ${e}`);
@@ -485,10 +479,20 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 				return options.res.status(500).json({error: 'something went wrong...'});
 			
 			case ExecCallerType.UTILITY:
-				throw e
+				throw e;
 		}
-		
 	}
+
+	if (options.verbose) logger.debug(`responding to client: ${JSON.stringify(response, null, 2)}`);
+		
+	switch(options.callerType) {
+		case ExecCallerType.ENDPOINT:
+			return options.res.status(200).send(response);
+
+		case ExecCallerType.UTILITY:
+			return response;
+	};
+
 };
 
 export const newTaskDirect = async (req: Request, res: Response) => {
@@ -512,7 +516,7 @@ export const newTask = async (req: Request, res: Response) => {
 };
 
 export const newJob = async (req: Request, res: Response) => {
-	const successful = await generalInsert({ req, type: TaskType.JOB });
+	const successful = await generalInsert({ req, type: TaskType.TOOL_JOB });
 	return res.status(200).send(successful);
 };
 

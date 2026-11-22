@@ -28,7 +28,7 @@ export const setExec = async (tx: StateTransaction & { exec?: string }) => {
 };
 
 export const setJob = async (tx: StateTransaction & { job?: string }) => {
-	assert(tx.type === TaskType.JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.JOB}`)
+	assert(tx.type === TaskType.TOOL_JOB, `task type mismatch: requested: ${tx.type}, expected ${TaskType.TOOL_JOB}`)
 	
 	const successful = await redisSet<StateTransaction>({incomingEntry: tx});
 	return successful;
@@ -65,7 +65,7 @@ export const getJob = async (id: string) => {
 	const entry = await redisGet<StateTransaction>(id);
 
 	assert(!!entry, 'no entry returned for getExec...')
-	assert(entry.type === TaskType.JOB, `task type mismatch: requested ${TaskType.JOB} received: ${entry?.type}`)
+	assert(entry.type === TaskType.TOOL_JOB, `task type mismatch: requested ${TaskType.TOOL_JOB} received: ${entry?.type}`)
 
 	return entry;
 };
@@ -106,9 +106,9 @@ export const deleteJobCommon = async (id: string) => {
 	try {
 		const entry = await redisGet<StateTransaction>(id);
 
-		if (!entry || entry?.type !== TaskType.JOB)
+		if (!entry || entry?.type !== TaskType.TOOL_JOB)
 			throw new Error(
-				`task type mismatch: requested ${TaskType.JOB} received: ${entry?.type}`,
+				`task type mismatch: requested ${TaskType.TOOL_JOB} received: ${entry?.type}`,
 			);
 
 		return await redisDelete(id);

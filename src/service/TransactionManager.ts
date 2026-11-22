@@ -1,27 +1,13 @@
-import { call_llm_task_transaction_manager } from '../llm.ts';
+import { call_llm_task_transaction_manager, getTypeFromFile } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import type { SummaryType } from '../prompts/types/SummaryType.js';
+import type { TransactionManagerResponse } from '../prompts/types/TransactionManagerResponse.js';
 import { redisGet } from '../state/state.ts';
 import type { StateTransaction } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 import { parseJsonSafe, summarizeExecTransaction } from '../worker/util.ts';
 
 const logger = getLogger('TransactionManager');
-
-export type TransactionManagerResponse = {
-	transaction_status?:
-		| 'success'
-		| 'failure'
-		| 'partial_success'
-		| 'unknown_state';
-	recoverability?:
-		| 'recoverable'
-		| 'non_recoverable'
-		| 'environment_issue'
-		| 'unknown';
-	next_action?: { type: 'retry' | 'terminate' | 'noop'; prompt: string };
-	confidence?: number;
-};
 
 export const manageExecutionResults = async (id: string) => {
 	
@@ -58,22 +44,8 @@ RULES:
 
 ONLY ACCEPTABLE OUTPUT FORMAT:
 {
-	transaction_status?:
-		| 'success'
-		| 'failure'
-		| 'partial_success'
-		| 'unknown_state';
-	recoverability?:
-		| 'recoverable'
-		| 'non_recoverable'
-		| 'environment_issue'
-		| 'unknown';
-	next_action?: {
-		type: 'retry' | 'terminate' | 'noop';
-		prompt: string;
-	};
-	confidence?: number;
-};
+	${await getTypeFromFile({file: 'TransactionManagerResponse.d.ts'})}
+}
 `);
 
 	finalResults = parseJsonSafe<TransactionManagerResponse>(txMgrResponse);
