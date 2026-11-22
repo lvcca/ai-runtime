@@ -15,7 +15,7 @@ import {
 	stateTransactionExists,
 } from '../state/util.ts';
 import { randomUUID } from 'node:crypto';
-import { call_llm_task_validator, getTypeFromFile } from '../llm.ts';
+import { llmTaskValidator, getTypeFromFile } from '../llm.ts';
 import {
 	extractResponseBlock,
 	parseJsonSafe,
@@ -264,7 +264,7 @@ export const executionValidator = async ({id, verbose=false}:{id?: string, verbo
 
 	if (verbose) logger.debug(`validating state transaction result: ${result}, from promptChain: ${JSON.stringify(promptChain)}`);
 
-	_result = await call_llm_task_validator(`
+	_result = await llmTaskValidator(`
 You are an Execution agent manager.
 
 Your job is to take results from a task and determine whether or not the task goal was accomplished.
@@ -392,7 +392,7 @@ export const manageExecResults = async (
 	) => {
 		// analysis and plan branching
 		// this should be seperate function to help keep newExec similar to newTask
-		const validatorResponse = await executionValidator({id: exec_id});
+		await executionValidator({id: exec_id});
 		const summary = await summarizeExecTransaction(exec_id);
 		const execManagementResults = await manageExecutionResults(exec_id);
 
