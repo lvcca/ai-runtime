@@ -1,4 +1,4 @@
-import { call_llm_task_transaction_manager, getTypeFromFile } from '../llm.ts';
+import { llmTaskTransactionManager, getTypeFromFile } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import type { SummaryType } from '../prompts/types/SummaryType.js';
 import type { TransactionManagerResponse } from '../prompts/types/TransactionManagerResponse.js';
@@ -23,7 +23,7 @@ export const manageExecutionResults = async (id: string) => {
 
 	let finalResults: TransactionManagerResponse = {};
 
-	const txMgrResponse = await call_llm_task_transaction_manager(`
+	const txMgrResponse = await llmTaskTransactionManager(`
 You are an Execution Task Transaction Manager.
 
 Your job is to take analyze executed task results and determine next steps. If the current transaction_status is not "success" a next_action is required. The "next_action" object should attempt to use all information involved to determine how to accomplish the initial task.

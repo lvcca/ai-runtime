@@ -1,4 +1,4 @@
-import { call_llm_toolcall, PROMPTS } from '../llm.ts';
+import { llmToolcall, CONTEXTS } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import {
 	type _Status,
@@ -17,17 +17,17 @@ export const GetToolExecPayload = async (
 	task: string,
 	currObj: StateTransaction
 ) =>
-	await call_llm_toolcall(`
+	await llmToolcall(`
 You are an System Execution agent.
 
 Your job is to take decomposed tasks written into concise executable steps and execute them using internal APIs identified in the ToolSchemas.
 
 ToolSchemas:
 ${toolRegistry.listSchemas()}
-${PROMPTS['file_system_schema']}
+${CONTEXTS['file_system_schema']}
 
 Tool Request Format:
-${PROMPTS['tool_types']}
+${CONTEXTS['tool_types']}
 
 TASK:
 ${task}

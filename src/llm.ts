@@ -69,7 +69,7 @@ export const ollamaGenerate = async (
 	try {
 		logger.info(`calling llm ${prompt}`);
 
-		const karpathy_guidelines = `${PROMPTS['karpathy_guidelines']} + '\n'`;
+		const karpathy_guidelines = `${CONTEXTS['karpathy_guidelines']} + '\n'`;
 
 		const response = await fetch(`${OLLAMA_URL}/api/generate`, {
 			body: JSON.stringify({
@@ -164,7 +164,9 @@ const KARPATHY_GUIDELINES_PROMPTS_FILE =
 	'./prompts/karpathy_guidelines_prompts.md';
 const TASK_RESULT_JUNCTION_MANAGER = './prompts/junction_manager.md';
 
-// types
+/**
+ * types @TODO replace all type refs with calls to {@link getTypeFromFile}
+ */
 const TOOL_API_TYPE_FILE = './prompts/types/ApiToolChain.d.ts';
 const SHELL_EXECUTOR_TYPE_FILE = './prompts/types/ShellExecutor.d.ts';
 const SHELL_BRANCH_ANALYSIS_TYPE_FILE = './prompts/types/ShellBranch.d.ts';
@@ -174,7 +176,7 @@ const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.d.ts';
 // schemas
 export const FILE_SYSTEM_SCHEMA = './prompts/schemas/FileSystemSchema.ts';
 
-export const PROMPTS = {
+export const CONTEXTS = {
 	tasks: await load_context({ prompts_md_file: CODING_TASKS_PROMPTS_FILE }),
 	execution: await load_context({ prompts_md_file: EXECUTION_PROMPTS_FILE }),
 	chat: await load_context({ prompts_md_file: CHAT_PROMPTS_FILE }),
@@ -230,145 +232,104 @@ export const PROMPTS = {
 	}),
 } as const;
 
-export type PROMPTS = (typeof PROMPTS)[keyof typeof PROMPTS];
+export type CONTEXTS = (typeof CONTEXTS)[keyof typeof CONTEXTS];
 
-export const call_llm_chat = async (prompt: string) => {
-	const withContext = PROMPTS['chat'] + prompt;
+export const llmQuery = async (
+	{prompt, contexts} : {prompt: string, contexts: CONTEXTS | CONTEXTS[]}
+) => {
+	const _prompts = Array.isArray(contexts) ? structuredClone(contexts) : [contexts]
+	_prompts.push(prompt)
+
+	const withContext = _prompts.join(`\n`)
 	const res = await ollamaGenerate(withContext);
+
 	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+	return res
+}
+
+export const llmChat = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.chat})
 
 /**
  * used in {@link GetPlan} {@link RevisePlan} {@link runTask} {@link RunShellTask}
  * @param prompt
  * @returns
  */
-export const call_llm_tasks = async (prompt: string) => {
-	const withContext = PROMPTS['tasks'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmTasks = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.tasks}) 
 
 /**
  * used in {@link GetToolExecPayload}
  * @param prompt 
  * @returns 
  */
-export const call_llm_toolcall = async (prompt: string) => {
-	const withContext = PROMPTS['execution'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmToolcall = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.execution})
 
 /**
  * used in {@link ToolExec}
  * @param prompt 
  * @returns 
  */
-export const call_llm_data_narrower = async (prompt: string) => {
-	const withContext = PROMPTS['tool_narrower'] + PROMPTS['tool_types'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmDataNarrower = async (prompt: string) => llmQuery({prompt, contexts: [CONTEXTS.tool_narrower, CONTEXTS.tool_types]})
 
 /**
  * unused
  * @param prompt 
  * @returns 
  */
-export const call_llm_shell_executor = async (prompt: string) => {
-	const withContext = PROMPTS['shell_executor'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+export const llmShellExecutor = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.shell_executor})
 
 /**
  * unused
  * @param prompt 
  * @returns 
  */
-export const call_llm_shell_results_analyzer = async (prompt: string) => {
-	const withContext = PROMPTS['shell_results_analyzer'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+export const llmAnalyzeShellResults = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.shell_results_analyzer})
 
 /**
  * used in {@link GetSecondOpinion} {@link AnalyzeShellResults}
  * @param prompt 
  * @returns 
  */
-export const call_llm_shell_branch_analyzer = async (prompt: string) => {
-	const withContext =
-		PROMPTS['shell_executor_branch_analyst'] +
-		PROMPTS['shell_executor_branch_analysis_types'] +
-		prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+export const llmAnalyzeShellBranch = async (prompt: string) => llmQuery({prompt, contexts: [CONTEXTS.shell_executor_branch_analyst, CONTEXTS.shell_executor_branch_analysis_types]})
 
 /**
  * used in {@link SimplifyOpinion}
  * @param prompt 
  * @returns 
  */
-export const call_llm_shell_branch_simplifier = async (prompt: string) => {
-	const withContext = PROMPTS['shell_executor_branch_analyst'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmShellBranAnalystSimplifier = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.shell_executor_branch_analyst})
+
 /**
  * used in {@link executionValidator}
  * @param prompt 
  * @returns 
  */
-export const call_llm_task_validator = async (prompt: string) => {
-	const withContext = PROMPTS['task_result_validator'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmTaskValidator = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.task_result_validator})
 
 /**
  * unused
  * @param prompt 
  * @returns 
  */
-export const call_llm_task_result_junction_manager = async (prompt: string) => {
-	const withContext = PROMPTS['task_result_junction_manager'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmTaskResultJunctionManager = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.task_result_junction_manager})
 
 /**
  * used in {@link summarizeExecTransaction}
  * @param prompt 
  * @returns 
  */
-export const call_llm_task_summarizer = async (prompt: string) => {
-	const withContext = PROMPTS['task_result_summarizer'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmTaskSummarizer = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.task_result_summarizer})
 
 /**
  * used in {@link manageExecutionResults}
  * @param prompt 
  * @returns 
  */
-export const call_llm_task_transaction_manager = async (prompt: string) => {
-	const withContext = PROMPTS['task_transaction_manager'] + prompt;
-	const res = await ollamaGenerate(withContext);
-	assert(res !== undefined, `did not receive response from llm: ${res}`)
-	return res;
-};
+
+export const llmTaskTransactionManager = async (prompt: string) => llmQuery({prompt, contexts: CONTEXTS.task_transaction_manager})

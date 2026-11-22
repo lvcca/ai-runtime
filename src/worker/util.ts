@@ -1,10 +1,10 @@
 import {
-	call_llm_data_narrower,
-	call_llm_shell_branch_analyzer,
-	call_llm_shell_branch_simplifier,
-	call_llm_task_summarizer,
+	llmDataNarrower,
+	llmAnalyzeShellBranch,
+	llmShellBranAnalystSimplifier,
+	llmTaskSummarizer,
 	getTypeFromFile,
-	PROMPTS,
+	CONTEXTS,
 } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import type {
@@ -566,7 +566,7 @@ export const ToolExec = async ({
 	let result: string = 'FAILED';
 
 	try {
-		const narrowed = await call_llm_data_narrower(
+		const narrowed = await llmDataNarrower(
 			`sanitize the following output: \' ${toolExecPayload} \'`,
 		);
 
@@ -612,7 +612,7 @@ export const ToolExec = async ({
 };
 
 export const SimplifyOpinion = async (next_step: string) =>
-	await call_llm_shell_branch_simplifier(`
+	await llmShellBranAnalystSimplifier(`
 You are a quality assurance expert. 
 
 Input:
@@ -640,7 +640,7 @@ export const GetSecondOpinion = async (
 	job_ids: string[],
 	task_id: string,
 ) =>
-	await call_llm_shell_branch_analyzer(`
+	await llmAnalyzeShellBranch(`
 You are a quality assurance expert.
 
 Your sole purpose is to evaluate the analysis of a job 
@@ -668,7 +668,7 @@ Do NOT:
 - Expand beyond branch viability assessment
 
 Each job must conform to the ShellResults structure:
-${PROMPTS['shell_results_types']}
+${CONTEXTS['shell_results_types']}
 
 Job Results:
 ${FormatStringArray(job_results)}
@@ -692,7 +692,7 @@ export const AnalyzeShellResults = async (
 	job_ids: string[],
 	task_id: string,
 ) => {
-	const finalResults = await call_llm_shell_branch_analyzer(`
+	const finalResults = await llmAnalyzeShellBranch(`
 You are a System Execution Branch Analysis agent.
 
 Your sole responsibility is to evaluate whether the current execution branch remains viable for accomplishing the task goal.
@@ -733,7 +733,7 @@ Do NOT:
 - expand beyond branch viability assessment
 
 Each job must conform to the ShellResults structure:
-${PROMPTS['shell_results_types']}
+${CONTEXTS['shell_results_types']}
 
 Job Results:
 ${FormatStringArray(job_results)}
@@ -768,7 +768,7 @@ export const summarizeExecTransaction = async (id: string) => {
 	const currObj = await redisGet<StateTransaction>(id);
 	const _obj = JSON.stringify(currObj);
 
-	const summarizedTask = await call_llm_task_summarizer(`
+	const summarizedTask = await llmTaskSummarizer(`
 You are an ai task result summarizer.
 
 Your job is to parse results and determine if a definitive next step is required.

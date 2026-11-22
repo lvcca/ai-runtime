@@ -1,4 +1,4 @@
-import { call_llm_chat, call_llm_tasks } from '../llm.ts';
+import { llmChat, llmTasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import { type _Status, Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
@@ -33,7 +33,7 @@ export const runTask = async (
 	let status: _Status = Status.FAILED; // assume failed
 
 	try {
-		if (LLM_DIRECT) final_output = await call_llm_chat(`${task}`);
+		if (LLM_DIRECT) final_output = await llmChat(`${task}`);
 		
 		else {
 			plan = await GetPlan(task);
@@ -46,7 +46,7 @@ export const runTask = async (
 
 			revised_plan = RevisePlanResult.steps.join();
 
-			final_output = await call_llm_tasks(`
+			final_output = await llmTasks(`
 	You are a task execution agent.
 	
 	Your job is to complete the requested task using the provided plan.

@@ -1,4 +1,4 @@
-import { call_llm_tasks } from '../llm.ts';
+import { llmTasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import { _Status, Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
@@ -31,7 +31,7 @@ export const RunShellTask = async (_task_id: string, task: string) => {
 
 		revised_plan = result.steps.join();
 
-		final_output = await call_llm_tasks(`
+		final_output = await llmTasks(`
 You are a shell runner.
 
 Your job is to complete the requested task using the provided plan.

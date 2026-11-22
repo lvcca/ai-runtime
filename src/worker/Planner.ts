@@ -1,5 +1,5 @@
 import { getLogger } from '../logger/logger.ts';
-import { call_llm_tasks } from '../llm.ts';
+import { llmTasks } from '../llm.ts';
 import { TaskType } from '../state/types.ts';
 import { parseJsonSafe, appendToTransactionLog } from './util.ts';
 
@@ -13,7 +13,7 @@ export type PlannerWorkerResultType = {
 };
 
 export const GetPlan = async (task: string) =>
-	await call_llm_tasks(`
+	await llmTasks(`
     You are a planning agent.
 
     Your job is to decompose tasks into concise executable steps.
@@ -113,7 +113,7 @@ ${JSON.stringify({
 
 	if (verbose) logger.info(`prompt: ${prompt}`);
 
-	const raw = await call_llm_tasks(prompt);
+	const raw = await llmTasks(prompt);
 
 	assert(!!raw, 'no response from llm...')
 
