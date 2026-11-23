@@ -282,7 +282,7 @@ const safeExecute = async (
 			`something went wrong in SafeExecute, tool: ${JSON.stringify(tool)} `,
 		);
 
-	let safeResult: string | undefined;
+	let safeResult: string = String();
 	let tmpExecResult: unknown = safeResult;
 
 	await setJob({
@@ -387,10 +387,21 @@ export const getError = (e: unknown) => {
 	return error;
 };
 
-const AddJob = async (id: string, job_id: string) => {
+const AddJob = async ({id, job_id, type}:{id: string, job_id: string, type: TaskType}) => {
 	let saved = false;
+	let entry: StateTransaction | undefined;
 
-	const entry = await getExec(id);
+	switch(type) {
+		case TaskType.EXECUTION:
+			entry = await getExec(id);
+			break;
+
+		default:
+			logger.warn(`no case for AddJob type: ${type}`)
+	}
+
+	assert(entry !== undefined, 'fix me')
+
 	const related = entry?.related;
 	const jobs = related?.toolJob ?? [];
 
@@ -404,11 +415,37 @@ const AddJob = async (id: string, job_id: string) => {
 				related: { ...related, toolJob: jobs },
 			});
 			break;
+
 		default:
 			logger.warn(`no case found for ${entry?.type} in addJobToTask..`);
 	}
 
+	assert(saved, 'AddJob save failed!')
+
 	return saved;
+};
+
+export const formatJobResults = (jobs: Map<string, string | undefined>): string => {
+	if (jobs.size === 0) {
+		return 'FAILED\nNo jobs were executed.';
+	}
+
+	const results: string[] = [];
+
+	for (const [job, response] of jobs.entries()) {
+		results.push(
+			`### ${job}\n${response?.trim() || 'FAILED: No response was returned.'}`
+		);
+	}
+
+	return [
+		'# START JOB EXECUTION RESULTS',
+		'The following is a summary of all executed jobs and their responses.',
+		'',
+		...results,
+		'',
+		'# END OF JOB RESULTS',
+	].join('\n');
 };
 
 /**
@@ -418,11 +455,11 @@ const AddJob = async (id: string, job_id: string) => {
  * @returns
  */
 
-const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
+const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload, verbose?: boolean) => {
 	let pivotRequired = false;
 	let final_results: string = 'FAILED';
-	let jobs = new Map<string, string | undefined>();
-
+	let jobs = new Map<string, string | undefined>(); // local map of jobs within function call
+	
 	try {
 
 		const toolExecutionSteps = toolPayload.identified_internal_tools_required; // in order of execution llm decided
@@ -430,32 +467,31 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 		for (const step of toolExecutionSteps) {
 
 			// make new transaction for each step
-			const _id = crypto.randomUUID();
+			const jobId = crypto.randomUUID();
 
 			try {
 				// prevent unnessary executions if pivot identified
 
 				if (pivotRequired) throw new Error('pivotRequired in branching!');
 
-				/**
-				 * insert entry for job
-				 */
+				// track locally
+				jobs.set(jobId, undefined);
 
-				// local init
-				jobs.set(_id, undefined);
-
-				// redis entry
-				const jobSuccessful = await setJob({
-					id: _id,
+				// track app state
+				await setJob({
+					id: jobId,
 					type: TaskType.TOOL_JOB,
 					status: { status: Status.QUEUED },
-					related: { exec: [exec_id] }, //<- @TODO audit array assignment, potential overwrite of previous data
+					related: { exec: [exec_id] },
 					job: JSON.stringify(step),
 				});
-				assert(jobSuccessful, 'job shouldnt fail')
 
 				// add link to main task
-				await AddJob(exec_id, _id);
+				await AddJob({
+					id: exec_id, 
+					job_id: jobId, 
+					type: TaskType.EXECUTION
+				});
 
 				// always be type safe with llm generated stuffs
 				let safeToolName: unknown = step['Tool'];
@@ -476,7 +512,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 
 				const params = step.Params ?? [];
 
-				logger.info(
+				if (verbose) logger.info(
 					`identified tool: ${JSON.stringify(safeToolName)}, params: ${JSON.stringify(params)}`,
 				);
 
@@ -488,42 +524,49 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload) => {
 						`could not find tool ${JSON.stringify(safeToolName)}`,
 					);
 
-				const result = await safeExecute(_id, foundToolEntry, params);
-				assert(result !== undefined,)
-				if (!result) throw new Error(`no result came back from SafeExecute...`);
-
-				final_results = result;
-
+				const result = await safeExecute(jobId, foundToolEntry, params);
+				if (!result) logger.warn('no result came back from safeExecute');
+				jobs.set(jobId, result); // set result locally
+				
+				// set result app state
 				await setJob({
-					id: _id,
+					id: jobId,
 					type: TaskType.TOOL_JOB,
 					status: { status: Status.COMPLETED },
 					job: JSON.stringify(step),
-					result: final_results,
+					result,
 				});
+
 			} catch (e) {
 				logger.error(
 					`something went wrong in TaskProcessJob step: ${JSON.stringify(getError(e))}`,
 				);
 
 				await setJob({
-					id: _id,
+					id: jobId,
 					type: TaskType.TOOL_JOB,
-					status: { status: Status.FAILED },
-					related: { exec: [exec_id] },
+					status: { 
+						status: Status.FAILED 
+					},
+					related: { 
+						exec: [exec_id] 
+					},
 					job: JSON.stringify(step),
-					result: final_results,
+					result: `${JSON.stringify(getError(e))}`,
 				});
 				continue;
 			}
 		}
+
+		final_results = formatJobResults(jobs);
+		
 	} catch (e) {
 		logger.error(
 			`something went wrong in TaskProcessJob: ${JSON.stringify(getError(e))}`,
 		);
 	}
 
-	logger.info(`final results from process task util: ${final_results}`);
+	if (verbose) logger.info(`final results from process task util: ${final_results}`);
 
 	return final_results;
 };
@@ -592,7 +635,9 @@ export const ToolExec = async ({
 		await setExec({
 			id: toolExecId,
 			result,
-			status: { status: Status.COMPLETED },
+			status: { 
+				status: Status.COMPLETED 
+			},
 		});
 
 		await appendToTransactionLog({
@@ -608,6 +653,8 @@ export const ToolExec = async ({
 			status: { status: Status.FAILED, message: `${JSON.stringify(e)}` },
 		});
 	}
+
+	// finalized formatted result from tool jobs run
 	return result;
 };
 
