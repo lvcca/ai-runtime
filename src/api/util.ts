@@ -322,15 +322,18 @@ ${getTypeFromFile({file: 'ValidatorResponse.d.ts'})}
 	return validatorResponse;
 };
 
-export const run = async ({id, type}:{id: string, type: TaskType}) => {
+export const runCommon = async ({id, type, verbose}:{id: string, type: TaskType, verbose?: boolean}) => {
 	let result: string | undefined;
 
 	const _tx = await redisGet<StateTransaction>(id);
 
 	const taskDirect = _tx?.type === TaskType.TASK_DIRECT;
 	const userRequestChain = _tx?.promptChain?.userRequestChain;
+	
 	assert(!!userRequestChain, 'user request chain undefined!')
 	assert(userRequestChain.length > 0, 'user request chain is empty!')
+
+	// currently latest appended
 	const latestRequest = userRequestChain[userRequestChain.length - 1];
 
 	switch (type) {
@@ -346,7 +349,7 @@ export const run = async ({id, type}:{id: string, type: TaskType}) => {
 			logger.warn(`no case for ${type}`);
 	}
 
-	logger.info(
+	if (verbose) logger.info(
 		`start result: type: ${type}, task: ${userRequestChain}, result: ${result}`,
 	);
 
@@ -463,7 +466,7 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 		});
 
 		// execute
-		response = await run({
+		response = await runCommon({
 			id: exec_id, 
 			type: TaskType.EXECUTION
 		});
@@ -498,7 +501,7 @@ export const newExec = async (options: execOptions): Promise<string | Response> 
 
 export const newTaskDirect = async (req: Request, res: Response) => {
 	const task_id = await generalInsert({ req, type: TaskType.TASK_DIRECT });
-	const llm_response = await run({
+	const llm_response = await runCommon({
 		id: task_id, 
 		type: TaskType.TASK_DIRECT
 	});
@@ -508,7 +511,7 @@ export const newTaskDirect = async (req: Request, res: Response) => {
 
 export const newTask = async (req: Request, res: Response) => {
 	const task_id = await generalInsert({ req, type: TaskType.TASK });
-	const llm_response = await run({
+	const llm_response = await runCommon({
 		id: task_id, 
 		type: TaskType.TASK
 	});
@@ -523,21 +526,22 @@ export const newJob = async (req: Request, res: Response) => {
 
 export const deleteTask = async (req: Request, res: Response) => {
 	const id = getHeader(req, 'id');
-	if (!id) res.status(400).send('invalid request');
+	if (!id) return res.status(400).send('invalid request');
 	const del = await deleteTaskCommon(id);
 	return res.status(200).send(`del response: ${del}`);
 };
 
 export const deleteExec = async (req: Request, res: Response) => {
 	const id = getHeader(req, 'id');
-	if (!id) res.status(400).send('invalid request');
+	if (!id) return res.status(400).send('invalid request');
+
 	const del = await deleteExecCommon(id);
 	return res.status(200).send(`del response: ${del}`);
 };
 
 export const deleteJob = async (req: Request, res: Response) => {
 	const id = getHeader(req, 'id');
-	if (!id) res.status(400).send('invalid request');
+	if (!id) return res.status(400).send('invalid request');
 	const del = await deleteJobCommon(id);
 	return res.status(200).send(`del response: ${del}`);
 };
