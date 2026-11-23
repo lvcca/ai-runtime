@@ -1,4 +1,4 @@
-import { llmToolcall, CONTEXTS } from '../llm.ts';
+import { llmToolcall, CONTEXTS, getTypeFromFile } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import {
 	type _Status,
@@ -27,7 +27,7 @@ ${toolRegistry.listSchemas()}
 ${CONTEXTS['fileSystemSchema']}
 
 Tool Request Format:
-${CONTEXTS['toolTypes']}
+${await getTypeFromFile({file: 'ApiToolChain.d.ts'})}
 
 TASK:
 ${task}

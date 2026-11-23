@@ -658,7 +658,7 @@ export const ToolExec = async ({
 	return result;
 };
 
-export const SimplifyOpinion = async (next_step: string) =>
+export const simplifyOpinion = async (next_step: string) =>
 	await llmShellBranAnalystSimplifier(`
 You are a quality assurance expert. 
 

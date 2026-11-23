@@ -1,10 +1,10 @@
 import { llmChat, llmTasks } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
+import type { PlannerWorkerResultType } from '../prompts/types/PlannerWorkerTypes.js';
 import { type _Status, Status, TaskType } from '../state/types.ts';
 import { setTask } from '../state/util.ts';
 import {
-	GetPlan,
-	type PlannerWorkerResultType,
+	getPlan,
 	RevisePlan,
 } from './Planner.ts';
 import { appendToTransactionLog } from './util.ts';
@@ -36,7 +36,7 @@ export const runTask = async (
 		if (LLM_DIRECT) final_output = await llmChat(`${task}`);
 		
 		else {
-			plan = await GetPlan(task);
+			plan = await getPlan({task});
 
 			const RevisePlanResult: PlannerWorkerResultType = await RevisePlan({
 				task_id,
