@@ -26,7 +26,10 @@ export const getConnection = async () => {
 	}
 };
 
-export const redisSet = async <T extends TransactionBase> ({incomingEntry, verbose=false}:{incomingEntry: T, verbose?: boolean}) => {
+export const redisSet = async <T extends TransactionBase> (
+	{incomingEntry, verbose=false} : {incomingEntry: T, verbose?: boolean}
+	) => {
+
 	let successful = false;
 
 	try {
