@@ -30,12 +30,12 @@ import type { ValidatorResponse } from '../prompts/types/ValidatorResponse.js';
 import {
 	type PromptChain,
 	type RelatedTransactionsChain,
-	_Status,
+	type _Status,
 	TaskType,
 	type StateTransaction,
 	type execOptions,
 	ExecCallerType,
-	_Status,
+	Status,
 } from '../state/types.ts';
 import { isValidUUID } from '../util/InputValidation.ts';
 import type { TransactionManagerResponse } from '../prompts/types/TransactionManagerResponse.js';
