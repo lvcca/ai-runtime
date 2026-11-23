@@ -24,10 +24,10 @@ Your job is to take decomposed tasks written into concise executable steps and e
 
 ToolSchemas:
 ${toolRegistry.listSchemas()}
-${CONTEXTS['file_system_schema']}
+${CONTEXTS['fileSystemSchema']}
 
 Tool Request Format:
-${CONTEXTS['tool_types']}
+${CONTEXTS['toolTypes']}
 
 TASK:
 ${task}
@@ -58,7 +58,9 @@ export const runExec = async (exec_id: string, userRequest: string, ) => {
 	// set status
 	await setExec({
 		id: exec_id,
-		status: { status: Status.RUNNING },
+		status: { 
+			status: Status.RUNNING 
+		},
 	});
 
 	const currEntry: StateTransaction = await getExec(exec_id);

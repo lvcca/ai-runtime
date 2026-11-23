@@ -668,7 +668,7 @@ Do NOT:
 - Expand beyond branch viability assessment
 
 Each job must conform to the ShellResults structure:
-${CONTEXTS['shell_results_types']}
+${CONTEXTS['shellResultsTypes']}
 
 Job Results:
 ${FormatStringArray(job_results)}
@@ -733,7 +733,7 @@ Do NOT:
 - expand beyond branch viability assessment
 
 Each job must conform to the ShellResults structure:
-${CONTEXTS['shell_results_types']}
+${CONTEXTS['shellResultsTypes']}
 
 Job Results:
 ${FormatStringArray(job_results)}
