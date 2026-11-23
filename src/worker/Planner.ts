@@ -1,18 +1,22 @@
 import { getLogger } from '../logger/logger.ts';
-import { llmTasks } from '../llm.ts';
+import { getTypeFromFile, llmTasks } from '../llm.ts';
 import { TaskType } from '../state/types.ts';
 import { parseJsonSafe, appendToTransactionLog } from './util.ts';
+import type { PlannerWorkerPlan, PlannerWorkerResultType } from '../prompts/types/PlannerWorkerTypes.js';
 
 const logger = getLogger('Planner');
 
-export type PlannerWorkerResultType = {
-	approved: boolean;
-	steps: string[];
-	revise_plan: boolean;
-	plan_feedback: string;
+export const genDynamicSteps = (n: number): PlannerWorkerPlan => {
+	const steps: string[] = [];
+
+	for (let i = 0; i < n; i++) {
+		steps.push(`step ${i + 1}`);
+	}
+
+	return { steps };
 };
 
-export const GetPlan = async (task: string) =>
+export const getPlan = async ({task, maxSteps=5}:{task: string, maxSteps?: number}) =>
 	await llmTasks(`
     You are a planning agent.
 
@@ -25,16 +29,19 @@ export const GetPlan = async (task: string) =>
     - Use at most 5 steps
     - Steps must be concrete and actionable
 
-    OUTPUT FORMAT:
-    {{
-    "steps": [
-        "step 1",
-        "step 2"
-    ]
-    }}
-
     TASK:
     ${task}
+
+	OUTPUT FORMAT:
+	use PlannerWorkerPlan from : {
+		${await getTypeFromFile({file: 'PlannerWorkerTypes.d.ts'})}
+	}
+	
+	MaxSteps:
+	${maxSteps}
+
+	Example:
+	${genDynamicSteps(maxSteps)}
 `);
 
 export const RevisePlan = async ({

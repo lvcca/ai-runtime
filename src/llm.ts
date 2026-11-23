@@ -85,7 +85,7 @@ const TASK_RESULT_JUNCTION_MANAGER = './prompts/junction_manager.md';
  */
 const TOOL_API_TYPE_FILE = './prompts/types/ApiToolChain.d.ts';
 const SHELL_EXECUTOR_TYPE_FILE = './prompts/types/ShellExecutor.d.ts';
-const SHELL_BRANCH_ANALYSIS_TYPE_FILE = './prompts/types/ShellBranch.d.ts';
+// const SHELL_BRANCH_ANALYSIS_TYPE_FILE = './prompts/types/ShellBranch.d.ts';
 const SHELL_RESULTS_TYPE_FILE = './prompts/types/ShellResults.d.ts';
 const TASK_RESULTS_VALIDATOR_TYPES = './prompts/types/TaskValidator.d.ts';
 
@@ -130,9 +130,9 @@ export const CONTEXTS = {
 	shellExecutorTypes: await loadContext({
 		promptsMdFile: SHELL_EXECUTOR_TYPE_FILE,
 	}),
-	shellExecutorBranchAnalysisTypes: await loadContext({
-		promptsMdFile: SHELL_BRANCH_ANALYSIS_TYPE_FILE,
-	}),
+	// shellExecutorBranchAnalysisTypes: await loadContext({
+	// 	promptsMdFile: SHELL_BRANCH_ANALYSIS_TYPE_FILE,
+	// }),
 	shellExecutorBranchAnalyst: await loadContext({
 		promptsMdFile: SHELL_EXECUTOR_BRANCH_PROMPTS_FILE,
 	}),
@@ -207,7 +207,7 @@ export const llmAnalyzeShellResults = async (prompt: string) => llmQuery({prompt
  * @param prompt 
  * @returns 
  */
-export const llmAnalyzeShellBranch = async (prompt: string) => llmQuery({prompt, contexts: [CONTEXTS.shellExecutorBranchAnalyst, CONTEXTS.shellExecutorBranchAnalysisTypes]})
+export const llmAnalyzeShellBranch = async (prompt: string) => llmQuery({prompt, contexts: [CONTEXTS.shellExecutorBranchAnalyst]})
 
 /**
  * used in {@link SimplifyOpinion}
