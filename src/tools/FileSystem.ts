@@ -188,73 +188,73 @@ export function RegisterTools(registry: ToolRegistry) {
 	registry.register({
 		name: 'current_working_directory',
 		func: currentWorkingDirectory,
-		toolSchema: FileSystemSchema.current_working_directory,
+		schema: FileSystemSchema.current_working_directory,
 		filename: __filename
 	});
 	registry.register({
 		name: 'list_directory',
 		func: list_directory,
-		toolSchema: FileSystemSchema.list_directory,
+		schema: FileSystemSchema.list_directory,
 		filename: __filename
 	});
 	registry.register({
 		name: 'read_file',
 		func: read_file,
-		toolSchema: FileSystemSchema.read_file,
+		schema: FileSystemSchema.read_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'write_file',
 		func: write_file,
-		toolSchema: FileSystemSchema.write_file,
+		schema: FileSystemSchema.write_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'append_file',
 		func: append_file,
-		toolSchema: FileSystemSchema.append_file,
+		schema: FileSystemSchema.append_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'create_directory',
 		func: create_directory,
-		toolSchema: FileSystemSchema.create_directory,
+		schema: FileSystemSchema.create_directory,
 		filename: __filename
 	});
 	registry.register({
 		name: 'move_file',
 		func: move_file,
-		toolSchema: FileSystemSchema.move_file,
+		schema: FileSystemSchema.move_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'copy_file',
 		func: copy_file,
-		toolSchema: FileSystemSchema.copy_file,
+		schema: FileSystemSchema.copy_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'delete_file',
 		func: delete_file,
-		toolSchema: FileSystemSchema.delete_file,
+		schema: FileSystemSchema.delete_file,
 		filename: __filename
 	});
 	registry.register({
 		name: 'file_exists',
 		func: file_exists,
-		toolSchema: FileSystemSchema.file_exists,
+		schema: FileSystemSchema.file_exists,
 		filename: __filename
 	});
 	registry.register({
 		name: 'search_files',
 		func: search_files,
-		toolSchema: FileSystemSchema.search_files,
+		schema: FileSystemSchema.search_files,
 		filename: __filename
 	});
 	registry.register({
 		name: 'execute_shell',
 		func: execute_shell,
-		toolSchema: FileSystemSchema.execute_shell,
+		schema: FileSystemSchema.execute_shell,
 		filename: __filename
 	});
 }
