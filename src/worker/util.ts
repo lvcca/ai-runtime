@@ -5,6 +5,7 @@ import {
 	llmTaskSummarizer,
 	getTypeFromFile,
 	CONTEXTS,
+	useTypeFromFile,
 } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import type {
@@ -462,7 +463,7 @@ const ExecToolCall = async (exec_id: string, toolPayload: ToolCallPayload, verbo
 	
 	try {
 
-		const toolExecutionSteps = toolPayload.identified_internal_tools_required; // in order of execution llm decided
+		const toolExecutionSteps = toolPayload.identifiedInternalToolsRequired; // in order of execution llm decided
 
 		for (const step of toolExecutionSteps) {
 
@@ -619,7 +620,7 @@ export const ToolExec = async ({
 			throw new Error(`no block found from narrowed response, block: ${responseBlock}`);
 
 		const json_response = parseJsonSafe<ToolCallPayload>(responseBlock);
-		const steps = json_response.identified_internal_tools_required;
+		const steps = json_response.identifiedInternalToolsRequired;
 
 		// ensure valid array
 		if (
@@ -667,9 +668,7 @@ ${next_step}
 
 Expected Output Format:
 <LLM_RESPONSE>
-    use ShellBranchAnalysisSimplified from the following: {
-		${await getTypeFromFile({file: 'ShellBranch.d.ts'})}
-	}
+${await useTypeFromFile({file: 'ShellBranch.d.ts', typeName: 'ShellBranchAnalysisSimplified'})}
 </LLM_RESPONSE>
 `);
 
@@ -838,7 +837,8 @@ RULES:
 
 OUTPUT FORMAT:
 <LLM_RESPONSE>
-${await getTypeFromFile({file: 'SummaryType.d.ts'})}
+SummaryType from {${await getTypeFromFile({file: 'SummaryType.d.ts'})}
+}
 </LLM_RESPONSE>
 `);
 	const summary = parseJsonSafe<SummaryType>( await extractResponseBlock(summarizedTask), );

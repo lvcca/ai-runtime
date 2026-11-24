@@ -1,4 +1,4 @@
-import { llmTaskTransactionManager, getTypeFromFile } from '../llm.ts';
+import { llmTaskTransactionManager, useTypeFromFile } from '../llm.ts';
 import { getLogger } from '../logger/logger.ts';
 import type { SummaryType } from '../prompts/types/SummaryType.js';
 import type { TransactionManagerResponse } from '../prompts/types/TransactionManagerResponse.js';
@@ -43,9 +43,8 @@ RULES:
 - Any text not in Javascript notation MUST be prepended with a comment
 
 ONLY ACCEPTABLE OUTPUT FORMAT:
-{
-	${await getTypeFromFile({file: 'TransactionManagerResponse.d.ts'})}
-}
+${await useTypeFromFile({file: 'TransactionManagerResponse.d.ts', typeName: 'TransactionManagerResponse'})}
+
 `);
 
 	finalResults = parseJsonSafe<TransactionManagerResponse>(txMgrResponse);

@@ -61,6 +61,11 @@ export const getTypeFromFile = async ({
 	return fileString;
 };
 
+export const useTypeFromFile = async ({file, typeName}:{file: string, typeName: string}) => `use ${typeName} from: {
+		${await getTypeFromFile({file})}
+	}
+`
+
 // prompts
 const CODING_TASKS_PROMPTS_FILE = './prompts/coding_tasks_prompts.md';
 const EXECUTION_PROMPTS_FILE = './prompts/execution_prompts.md';

@@ -26,19 +26,19 @@ ToolSchemas:
 ${toolRegistry.listSchemas()}
 ${CONTEXTS['fileSystemSchema']}
 
-Tool Request Format:
+Tool Request Format Types:
 ${await getTypeFromFile({file: 'ApiToolChain.d.ts'})}
 
-TASK:
+Task:
 ${task}
 
-Current Transaction status:
+Current Transaction Status:
 ${JSON.stringify(currObj.status)}
 
-Current Transaction related Tasks:
+Current Transaction Related Tasks:
 ${JSON.stringify(currObj.related)}
 
-Current Transaction full promptChain:
+Current Transaction Full promptChain:
 ${JSON.stringify(currObj.promptChain)}
 
 RULES:
@@ -50,7 +50,10 @@ RULES:
 - Any text not in Javascript notation MUST be prepended with a comment
 
 ONLY ACCEPTABLE OUTPUT FORMAT:
-ToolCallPayload`);
+ToolCallPayload from: {
+	${await getTypeFromFile({file: 'ApiToolChain.d.ts'})}
+}
+`);
 
 export const runExec = async (exec_id: string, userRequest: string, ) => {
 	logger.debug(`RunExec, id: ${exec_id}, task: ${userRequest}`);
