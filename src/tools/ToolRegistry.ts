@@ -14,7 +14,7 @@ export type RegisteredToolEntry = {
 };
 
 /**
- * Singleton tool repository class
+ * tool repository class
  * @class
  */
 export class ToolRegistry {
@@ -60,7 +60,7 @@ export class ToolRegistry {
 	public register({
 		name,
 		func,
-		toolSchema,
+		schema,
 		sanityCheck = false,
 		overwrite = false,
 		verbose = false,
@@ -68,7 +68,7 @@ export class ToolRegistry {
 	}: {
 		name: string;
 		func: _func;
-		toolSchema: Tool;
+		schema: Tool;
 		filename: string;
 		sanityCheck?: boolean;
 		overwrite?: boolean;
@@ -80,13 +80,13 @@ export class ToolRegistry {
 		try {
 			if (verbose)
 				logger.debug(
-					`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(toolSchema, null, 2)}`,
+					`registering tool name: ${name}, functype: ${typeof func}, func: ${func}, schema: ${JSON.stringify(schema, null, 2)}`,
 				);
 
 			const tool: RegisteredToolEntry = {
 				name,
 				func,
-				schema: toolSchema,
+				schema,
 				filename
 			};
 
@@ -96,6 +96,7 @@ export class ToolRegistry {
 				const _sanityCheck = this._tools.get(name);
 				logger.debug(`tool sanity check func: ${_sanityCheck?.func}`);
 			}
+
 		} catch (e) {
 			logger.error(`something went wrong in ToolRegistry register: ${e}`);
 		}
@@ -135,14 +136,21 @@ export class ToolRegistry {
 	 * 	list schemas available
 	 * 	@returns {Map<string, string>} map of tool schema name to tool schema
 	 */
-	public listSchemas(): Map<string, RegisteredToolEntry>  {
-		// SchemaName<functionName, Tool>
-
-		return this._tools;
+	public listSchemas(): schemaInfoType []  {
+		const schemas = Array.from(this._tools.values()).map(
+			tool => {
+				const currSchema: schemaInfoType = {
+					name: tool.name, 
+					schema: tool.schema,
+					filename: tool.filename
+				};
+				return currSchema;
+			});
+		return schemas
 	}
 }
 
-export type toolInfoType = {schema: string, filename: string}
+export type schemaInfoType = {name: string, schema: Tool, filename: string}
 
 export const toolRegistry = new ToolRegistry();
 
