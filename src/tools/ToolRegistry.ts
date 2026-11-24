@@ -10,6 +10,7 @@ export type RegisteredToolEntry = {
 	readonly name: string;
 	readonly func: _func;
 	readonly schema: Tool;
+	readonly filename: string;
 };
 
 /**
@@ -44,6 +45,7 @@ export class ToolRegistry {
 	 *             required: true,
 	 *         },
 	 *     } as Tool,
+	 * 	   filename: basename(__filename)
 	 * });
 	 *
 	 * @param name 			- tool name
@@ -51,6 +53,7 @@ export class ToolRegistry {
 	 * @param toolSchema 	- Tool schema, machine's type def
 	 * @param sanityCheck 	- run a sanity test post registration
 	 * @param overwrite 	- overwrite existing entries with the same name
+	 * @param filename 		- tool schema file name
 	 * @method
 	 */
 
@@ -61,10 +64,12 @@ export class ToolRegistry {
 		sanityCheck = false,
 		overwrite = false,
 		verbose = false,
+		filename
 	}: {
 		name: string;
 		func: _func;
 		toolSchema: Tool;
+		filename: string;
 		sanityCheck?: boolean;
 		overwrite?: boolean;
 		verbose?: boolean;
@@ -82,6 +87,7 @@ export class ToolRegistry {
 				name,
 				func,
 				schema: toolSchema,
+				filename
 			};
 
 			this._tools.set(name, tool);
@@ -129,21 +135,14 @@ export class ToolRegistry {
 	 * 	list schemas available
 	 * 	@returns {Map<string, string>} map of tool schema name to tool schema
 	 */
-	public listSchemas(): Map<string, string> {
+	public listSchemas(): Map<string, RegisteredToolEntry>  {
 		// SchemaName<functionName, Tool>
-		const schemas = new Map<string, string>();
 
-		for (const tool of this._tools.values()) {
-			if (tool.schema) {
-				if (!schemas.get(tool.schema.name)) {
-					schemas.set(tool.schema.name, JSON.stringify(tool.schema));
-				}
-			}
-		}
-
-		return schemas;
+		return this._tools;
 	}
 }
+
+export type toolInfoType = {schema: string, filename: string}
 
 export const toolRegistry = new ToolRegistry();
 
